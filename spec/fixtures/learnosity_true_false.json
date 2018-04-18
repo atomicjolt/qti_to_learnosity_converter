@@ -1,0 +1,19 @@
+{
+    "stimulus": "<div><p>The grand canyon is deep?</p></div>",
+    "multiple_responses": false,
+    "options": [{
+        "value": "7161",
+        "label": "True"
+    }, {
+        "value": "460",
+        "label": "False"
+    }],
+    "response_id": "response1",
+    "type": "mcq",
+    "validation": {
+        "scoring_type": "exactMatch",
+        "valid_response": {
+            "value": ["7161"]
+        }
+    }
+}
