@@ -2,10 +2,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
   describe "multiple choice" do
     it "handles a basic multiple choice question" do
       expected_result = CanvasQtiToLearnosityConverter.
-        build_item_from_file(fixture_path('learnosity_multiple_choice.json'))
+        build_item_from_file(fixture_path("learnosity_multiple_choice.json"))
       qti_quiz = CanvasQtiToLearnosityConverter.
         build_quiz_from_file fixture_path("multiple_choice.qti.xml")
       result = CanvasQtiToLearnosityConverter.convert_item(qti_quiz)
+byebug
       expect(result).to eql(expected_result)
     end
   end

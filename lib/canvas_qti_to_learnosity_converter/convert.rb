@@ -60,9 +60,30 @@ module CanvasQtiToLearnosityConverter
       &.first&.next&.text&.to_sym
   end
 
-  def self.extract_stimulus(item); end
-  def self.extract_multiple_choice_options(item); end
-  def self.extract_response_id(item); end
+  def self.extract_mattext(mattext_node)
+    mattext_node.content
+  end
+
+  def self.extract_stimulus(item)
+    mattext = item.css("item > presentation > material > mattext").first
+    extract_mattext(mattext)
+  end
+
+  def self.extract_multiple_choice_options(item)
+    choices = item.css("item > presentation > response_lid > render_choice > response_label")
+    choices.map do |choice|
+      ident = choice.attribute("ident").value
+      {
+        value: ident,
+        label: extract_mattext(choice.css("material > mattext").first),
+      }
+    end
+  end
+
+  def self.extract_response_id(item)
+    item.css("item > presentation > response_lid").attribute("ident").value
+  end
+
   def self.extract_multiple_choice_validation(item); end
   def self.convert_multiple_choice(item)
     MultipleChoiceLearnosityQuestion.new({
