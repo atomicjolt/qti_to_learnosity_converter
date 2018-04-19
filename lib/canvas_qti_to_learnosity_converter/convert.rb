@@ -1,5 +1,6 @@
-require 'nokogiri'
-require 'forwardable'
+require "nokogiri"
+require "forwardable"
+require "ostruct"
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -11,25 +12,25 @@ module CanvasQtiToLearnosityConverter
 
     attr_reader :xml
     def initialize(qti_string:)
-      @xml = Nokogiri.XML(qti_string) { |config| config.noblanks }
+      @xml = Nokogiri.XML(qti_string, &:noblanks)
     end
   end
 
-  #  export function convert(qti) {
-  #    const $ = cheerio.load(qti);
-  #    const items = [];
-  #    $('item').toArray().forEach((item) => {
-  #      const convertedItem = convertItem($, $(item));
-  #      if (!_.isNil(convertedItem)) { items.push(convertedItem); }
-  #    });
-  # 
-  #    const title = $('questestinterop > assessment').attr('title');
-  #    const ident = $('questestinterop > assessment').attr('ident');
-  #    return {
-  #      title,
-  #      ident,
-  #      items
-  #    };
+  class LearnosityQuestion < OpenStruct
+  end
+
+  class MultipleChoiceLearnosityQuestion < LearnosityQuestion
+  end
+
+  class Learnosityitem
+  end
+
+  class LearnosityActivity
+  end
+
+  LEARNOSITY_TYPE_MAP = {
+    "mcq" => MultipleChoiceLearnosityQuestion
+  }
 
   def self.build_quiz_from_qti_string(qti_string)
     CanvasQtiQuiz.new(qti_string: qti_string)
@@ -43,26 +44,35 @@ module CanvasQtiToLearnosityConverter
     qti_file.close
   end
 
-  def self.extract_type(qti_quiz)
-    qti_quiz.css(%{ item > itemmetadata > qtimetadata >
+  def self.build_item_from_file(path)
+    file = File.new path
+    file_val = JSON.parse(file.read)
+    type = file_val["type"]
+    return LearnosityQuestion.new(file_val) if type.nil?
+    LEARNOSITY_TYPE_MAP[type].new(file_val)
+  ensure
+    file.close
+  end
+
+  def self.extract_type(item)
+    item.css(%{ item > itemmetadata > qtimetadata >
       qtimetadatafield > fieldlabel:contains("question_type")})
       &.first&.next&.text&.to_sym
   end
 
-   def self.convert_multiple_choice(qti_quiz)
-# export function convertMultipleChoice($, item) {
-#   const result = {
-#     stimulus: extractStimulus($, item),
-#     options: extractOptions($, item),
-#     multiple_responses: false,
-#     response_id: extractResponseId($, item),
-#     type: 'mcq',
-#     validation: extractMCValidation($, item),
-#   };
-# 
-#   return result;
-# }
-
+  def self.extract_stimulus(item); end
+  def self.extract_multiple_choice_options(item); end
+  def self.extract_response_id(item); end
+  def self.extract_multiple_choice_validation(item); end
+  def self.convert_multiple_choice(item)
+    MultipleChoiceLearnosityQuestion.new({
+      stimulus: extract_stimulus(item),
+      options: extract_multiple_choice_options(item),
+      multiple_responses: false,
+      response_id: extract_response_id(item),
+      type: "mcq",
+      validation: extract_multiple_choice_validation(item),
+    })
    end
 
    def self.convert_item(qti_quiz)
@@ -73,7 +83,6 @@ module CanvasQtiToLearnosityConverter
     else
       raise CanvasQuestionTypeNotSupportedError
     end
-    nil
   end
 
   def self.convert(qti)
