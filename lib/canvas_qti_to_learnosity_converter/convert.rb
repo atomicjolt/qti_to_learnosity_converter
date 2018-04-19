@@ -1,12 +1,17 @@
 require 'nokogiri'
+require 'forwardable'
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
   end
 
   class CanvasQtiQuiz
+    extend Forwardable
+    def_delegators :@xml, :css
+
+    attr_reader :xml
     def initialize(qti_string:)
-      @xml = Nokogiri.XML(qti_string)
+      @xml = Nokogiri.XML(qti_string) { |config| config.noblanks }
     end
   end
 
@@ -39,31 +44,31 @@ module CanvasQtiToLearnosityConverter
   end
 
   def self.extract_type(qti_quiz)
-    result = qti_quiz.xpath('item > itemmetadata > qtimetadata > qtimetadatafield')
-    byebug
-    result
-#    return item
-#       .find('item > itemmetadata > qtimetadata > qtimetadatafield > fieldlabel:contains("question_type")')
-#       .next().text();
+    qti_quiz.css(%{ item > itemmetadata > qtimetadata >
+      qtimetadatafield > fieldlabel:contains("question_type")})
+      &.first&.next&.text&.to_sym
   end
 
    def self.convert_multiple_choice(qti_quiz)
+# export function convertMultipleChoice($, item) {
+#   const result = {
+#     stimulus: extractStimulus($, item),
+#     options: extractOptions($, item),
+#     multiple_responses: false,
+#     response_id: extractResponseId($, item),
+#     type: 'mcq',
+#     validation: extractMCValidation($, item),
+#   };
+# 
+#   return result;
+# }
+
    end
 
    def self.convert_item(qti_quiz)
-#     const type = extractType($, item);
-#
-#     switch (type) {
-#       case 'multiple_choice_question': { return convertMultipleChoice($, item); }
-#       case 'true_false_question': { return convertTrueFalse($, item); }
-#       case 'multiple_answers_question': { return convertMultipleAnswer($, item); }
-#       default: {
-#--       console.error('QTI question type not supported');
-#       }
-#     }
     type = extract_type(qti_quiz)
     case type
-    when :multiple_choice
+    when :multiple_choice_question
       convert_multiple_choice(qti_quiz)
     else
       raise CanvasQuestionTypeNotSupportedError

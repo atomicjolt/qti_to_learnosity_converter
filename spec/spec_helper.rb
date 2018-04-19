@@ -21,8 +21,7 @@ def fixture_path(name)
 end
 
 def read_fixture(name)
-  path = File.dirname(__FILE__)
-  file = File.new "#{path}/fixtures/#{name}"
+  file = File.new(fixture_path(name))
   file.read
 ensure
   file.close unless file.nil?
