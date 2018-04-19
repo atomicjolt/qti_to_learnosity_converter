@@ -74,8 +74,8 @@ module CanvasQtiToLearnosityConverter
     choices.map do |choice|
       ident = choice.attribute("ident").value
       {
-        value: ident,
-        label: extract_mattext(choice.css("material > mattext").first),
+        "value" => ident,
+        "label" => extract_mattext(choice.css("material > mattext").first),
       }
     end
   end
@@ -84,7 +84,24 @@ module CanvasQtiToLearnosityConverter
     item.css("item > presentation > response_lid").attribute("ident").value
   end
 
-  def self.extract_multiple_choice_validation(item); end
+  def self.extract_multiple_choice_validation(item)
+    resp_conditions = item.css("item > resprocessing > respcondition")
+    correct_condition = resp_conditions.select do |condition|
+      setvar = condition.css("setvar")
+      setvar.length === 1 && setvar.text === "100"
+    end.first
+
+
+    # TODO check for more than 1 element
+    correct_value = correct_condition.css("varequal").text
+    {
+      "scoring_type" => "exactMatch",
+      "valid_response" => {
+        "value" => [correct_value],
+      },
+    }
+  end
+
   def self.convert_multiple_choice(item)
     MultipleChoiceLearnosityQuestion.new({
       stimulus: extract_stimulus(item),
