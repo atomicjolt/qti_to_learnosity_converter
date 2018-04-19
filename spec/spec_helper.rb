@@ -15,7 +15,12 @@ RSpec.configure do |config|
   end
 end
 
-def fixture(name)
+def fixture_path(name)
+  path = File.dirname(__FILE__)
+  "#{path}/fixtures/#{name}"
+end
+
+def read_fixture(name)
   path = File.dirname(__FILE__)
   file = File.new "#{path}/fixtures/#{name}"
   file.read
