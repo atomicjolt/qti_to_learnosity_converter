@@ -6,7 +6,17 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       qti_quiz = CanvasQtiToLearnosityConverter.
         build_quiz_from_file fixture_path("multiple_choice.qti.xml")
       result = CanvasQtiToLearnosityConverter.convert_item(qti_quiz)
-byebug
+      expect(result).to eql(expected_result)
+    end
+  end
+
+  describe "True False" do
+    it "handles a basic true false question" do
+      expected_result = CanvasQtiToLearnosityConverter.
+        build_item_from_file(fixture_path("learnosity_true_false.json"))
+      qti_quiz = CanvasQtiToLearnosityConverter.
+        build_quiz_from_file fixture_path("true_false.qti.xml")
+      result = CanvasQtiToLearnosityConverter.convert_item(qti_quiz)
       expect(result).to eql(expected_result)
     end
   end

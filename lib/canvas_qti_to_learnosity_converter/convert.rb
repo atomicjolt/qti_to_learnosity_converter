@@ -114,13 +114,15 @@ module CanvasQtiToLearnosityConverter
    end
 
    def self.convert_item(qti_quiz)
-    type = extract_type(qti_quiz)
-    case type
-    when :multiple_choice_question
-      convert_multiple_choice(qti_quiz)
-    else
-      raise CanvasQuestionTypeNotSupportedError
-    end
+     type = extract_type(qti_quiz)
+     case type
+     when :multiple_choice_question
+       convert_multiple_choice(qti_quiz)
+     when :true_false_question
+       convert_multiple_choice(qti_quiz)
+     else
+       raise CanvasQuestionTypeNotSupportedError
+     end
   end
 
   def self.convert(qti)
