@@ -22,6 +22,9 @@ module CanvasQtiToLearnosityConverter
   class MultipleChoiceLearnosityQuestion < LearnosityQuestion
   end
 
+  class MultipleAnswersLearnosityQuestion < LearnosityQuestion
+  end
+
   class Learnosityitem
   end
 
@@ -44,12 +47,11 @@ module CanvasQtiToLearnosityConverter
     qti_file.close
   end
 
-  def self.build_item_from_file(path)
+  def self.build_item_from_file(path, item_type = nil)
     file = File.new path
     file_val = JSON.parse(file.read)
-    type = file_val["type"]
-    return LearnosityQuestion.new(file_val) if type.nil?
-    LEARNOSITY_TYPE_MAP[type].new(file_val)
+    type = item_type || LEARNOSITY_TYPE_MAP[file_val["type"]]
+    type.new(file_val)
   ensure
     file.close
   end
@@ -102,6 +104,15 @@ module CanvasQtiToLearnosityConverter
     }
   end
 
+  def self.extract_multiple_answers_validation(item)
+    correct_condition = item.css('item > resprocessing > respcondition[continue="No"] > conditionvar > and > varequal')
+    alt_responses = correct_condition.map(&:text)
+    {
+      "scoring_type" => "partialMatch",
+      "alt_responses" => alt_responses,
+    }
+  end
+
   def self.convert_multiple_choice(item)
     MultipleChoiceLearnosityQuestion.new({
       stimulus: extract_stimulus(item),
@@ -110,6 +121,17 @@ module CanvasQtiToLearnosityConverter
       response_id: extract_response_id(item),
       type: "mcq",
       validation: extract_multiple_choice_validation(item),
+    })
+  end
+
+  def self.convert_multiple_answers(item)
+    MultipleAnswersLearnosityQuestion.new({
+      stimulus: extract_stimulus(item),
+      options: extract_multiple_choice_options(item),
+      multiple_responses: true,
+      response_id: extract_response_id(item),
+      type: "mcq",
+      validation: extract_multiple_answers_validation(item),
     })
    end
 
@@ -120,6 +142,8 @@ module CanvasQtiToLearnosityConverter
        convert_multiple_choice(qti_quiz)
      when :true_false_question
        convert_multiple_choice(qti_quiz)
+     when :multiple_answers_question
+       convert_multiple_answers(qti_quiz)
      else
        raise CanvasQuestionTypeNotSupportedError
      end
