@@ -35,4 +35,16 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Convert canvas quiz items" do
+    it "handles qti strings" do
+      qti_string = CanvasQtiToLearnosityConverter.
+        read_file(fixture_path("all_question_types.qti.xml"))
+      result = CanvasQtiToLearnosityConverter.convert(qti_string)
+
+      expect(result[:title]).to eql("All Questions")
+      expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
+      expect(result[:items].size).to eql 3
+    end
+  end
+
 end

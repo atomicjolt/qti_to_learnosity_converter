@@ -10,7 +10,15 @@ module CanvasQtiToLearnosityConverter
     extend Forwardable
     def_delegators :@xml, :css
 
-    attr_reader :xml
+    def initialize(qti_string:)
+      @xml = Nokogiri.XML(qti_string, &:noblanks)
+    end
+  end
+
+  class CanvasQtiQuizQuestion
+    extend Forwardable
+    def_delegators :@xml, :css
+
     def initialize(qti_string:)
       @xml = Nokogiri.XML(qti_string, &:noblanks)
     end
@@ -34,6 +42,14 @@ module CanvasQtiToLearnosityConverter
   LEARNOSITY_TYPE_MAP = {
     "mcq" => MultipleChoiceLearnosityQuestion
   }
+
+  def self.read_file(path)
+    file = File.new path
+    file.read
+  ensure
+    file.close
+  # Do we need to unlink?
+  end
 
   def self.build_quiz_from_qti_string(qti_string)
     CanvasQtiQuiz.new(qti_string: qti_string)
@@ -150,7 +166,21 @@ module CanvasQtiToLearnosityConverter
   end
 
   def self.convert(qti)
-    nil
-  end
+    quiz = CanvasQtiQuiz.new(qti_string: qti)
+    items = quiz.css("item").map do |item|
+      begin
+        quiz_item = CanvasQtiQuizQuestion.new(qti_string: item.to_html)
+        convert_item(quiz_item)
+      rescue CanvasQuestionTypeNotSupportedError
+        nil
+      end
+    end.compact
 
+    assessment = quiz.css("assessment")
+    {
+      title: assessment.attribute("title").value,
+      ident: assessment.attribute("ident").value,
+      items: items,
+    }
+  end
 end
