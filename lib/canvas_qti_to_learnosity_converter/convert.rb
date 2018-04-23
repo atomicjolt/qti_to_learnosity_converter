@@ -199,19 +199,23 @@ module CanvasQtiToLearnosityConverter
       map { |entry| entry.attribute("href").value }
   end
 
+  def self.to_native_types(activity)
+    clone = activity.clone
+    clone[:items] = activity[:items].map(&:to_h)
+    clone
+  end
+
   def self.convert_imscc_export(path)
-    # Find all quiz files
-    # Convert for each file
-     Zip::File.open(path) do |zip_file|
-       entry = zip_file.find_entry("imsmanifest.xml")
-       manifest = entry.get_input_stream.read
-       parsed_manifest = Nokogiri.XML(manifest, &:noblanks)
-       paths = imscc_quiz_paths(parsed_manifest)
-       result = paths.map do |qti_path|
-         qti = zip_file.find_entry(qti_path).get_input_stream.read
-         convert(qti)
-       end
-       result
+    Zip::File.open(path) do |zip_file|
+      entry = zip_file.find_entry("imsmanifest.xml")
+      manifest = entry.get_input_stream.read
+      parsed_manifest = Nokogiri.XML(manifest, &:noblanks)
+      paths = imscc_quiz_paths(parsed_manifest)
+      result = paths.map do |qti_path|
+        qti = zip_file.find_entry(qti_path).get_input_stream.read
+        to_native_types(convert(qti))
       end
+      result
+    end
   end
 end
