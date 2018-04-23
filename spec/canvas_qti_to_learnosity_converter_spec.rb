@@ -47,4 +47,13 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Imscc Export" do
+    it "Converts imscc export package of quizzes" do
+      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("imscc.zip"))
+
+      expect(result.size).to eql(1)
+      expect(result.first[:title]).to eql("All Questions")
+    end
+  end
+
 end

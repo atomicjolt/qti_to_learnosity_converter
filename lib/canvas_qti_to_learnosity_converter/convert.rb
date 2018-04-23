@@ -1,6 +1,7 @@
 require "nokogiri"
 require "forwardable"
 require "ostruct"
+require "zip"
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -182,5 +183,35 @@ module CanvasQtiToLearnosityConverter
       ident: assessment.attribute("ident").value,
       items: items,
     }
+  end
+
+  def self.convert_qti_file(path)
+    file = File.new(path)
+    qti_string = file.read
+    convert(qti_string)
+  ensure
+    file.close
+    file.unlink
+  end
+
+  def self.imscc_quiz_paths(parsed_manifest)
+    parsed_manifest.css("resources > resource[type='imsqti_xmlv1p2'] > file").
+      map { |entry| entry.attribute("href").value }
+  end
+
+  def self.convert_imscc_export(path)
+    # Find all quiz files
+    # Convert for each file
+     Zip::File.open(path) do |zip_file|
+       entry = zip_file.find_entry("imsmanifest.xml")
+       manifest = entry.get_input_stream.read
+       parsed_manifest = Nokogiri.XML(manifest, &:noblanks)
+       paths = imscc_quiz_paths(parsed_manifest)
+       result = paths.map do |qti_path|
+         qti = zip_file.find_entry(qti_path).get_input_stream.read
+         convert(qti)
+       end
+       result
+      end
   end
 end
