@@ -1,8 +1,13 @@
 # CanvasQtiToLearnosityConverter
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/canvas_qti_to_learnosity_converter`. To experiment with that code, run `bin/console` for an interactive prompt.
+This gem is designed to facilitate the conversion of canvas quizzes exported as
+qti 1.2, to the learnosity json format. It currently has support for converting
+a single qti file, or converting an entire imscc export of qti quizzes. Be
+aware that the CanvasQtiToLearnosityConverter makes assumptions about the
+format of the qti that canvas exports as of 4/23/18, and will be sensitive
+to spec compliant changes to the way that canvas exports qti.
 
-TODO: Delete this and the text above, and describe your gem
+
 
 ## Installation
 
@@ -22,17 +27,41 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+#### Convert entire imscc export
+
+```
+# Convert All QTI Files in entire imscc
+CanvasQtiToLearnosityConverter.convert_imscc_export(path)
+# returns [
+#  {
+#    title: "Canvas Quiz Title",
+#    ident: "canvas_qti_export_id",
+#    items: [...converted_learnosity_questions... ]
+#    More information on learnosity question format: https://docs.learnosity.com/analytics/data/endpoints/itembank_endpoints#setQuestions
+#  }, ...
+#]
+```
+
+#### Convert single qti string
+
+```
+# Convert single qti_string
+CanvasQtiToLearnosityConverter.convert(qti_string)
+# returns
+#  {
+#    title: "Canvas Quiz Title",
+#    ident: "canvas_qti_export_id",
+#    items: [...converted_learnosity_questions... ]
+#    More information on learnosity question format: https://docs.learnosity.com/analytics/data/endpoints/itembank_endpoints#setQuestions
+#  },
+```
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+#### Specs
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/canvas_qti_to_learnosity_converter.
+To run the tests
+```rake spec```
 
 ## License
 
