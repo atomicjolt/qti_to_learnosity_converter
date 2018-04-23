@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "canvas_qti_to_learnosity_converter"
   spec.version       = CanvasQtiToLearnosityConverter::VERSION
   spec.authors       = ["Atomic Jolt", "Nick Benoit"]
-  spec.email         = [""]
+  spec.email         = ["support@atomicjolt.com"]
 
   spec.summary       = %q{Converts canvas qti to learnosity JSON}
   spec.homepage      = "https://github.com/atomicjolt/qti_to_learnosity_converter"
@@ -16,8 +16,6 @@ Gem::Specification.new do |spec|
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})
   end
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.16"
