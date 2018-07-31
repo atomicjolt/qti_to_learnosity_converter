@@ -2,6 +2,7 @@ require "nokogiri"
 require "forwardable"
 require "ostruct"
 require "zip"
+require "uri"
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -150,37 +151,65 @@ module CanvasQtiToLearnosityConverter
       type: "mcq",
       validation: extract_multiple_answers_validation(item),
     })
-   end
-
-   def self.convert_item(qti_quiz)
-     type = extract_type(qti_quiz)
-     case type
-     when :multiple_choice_question
-       convert_multiple_choice(qti_quiz)
-     when :true_false_question
-       convert_multiple_choice(qti_quiz)
-     when :multiple_answers_question
-       convert_multiple_answers(qti_quiz)
-     else
-       raise CanvasQuestionTypeNotSupportedError
-     end
   end
 
-  def self.convert(qti)
+  def self.add_files_to_assets(assets, path, text)
+    text.scan(/%24IMS-CC-FILEBASE%24\/([^"]+)/).flatten.each do |asset_path|
+      decoded_path = URI.unescape(asset_path)
+      assets[decoded_path] ||= []
+      assets[decoded_path].push(path)
+    end
+  end
+
+  def self.convert_item(qti_quiz, assets, item_index)
+    type = extract_type(qti_quiz)
+
+    question = case type
+    when :multiple_choice_question
+      convert_multiple_choice(qti_quiz)
+    when :true_false_question
+      convert_multiple_choice(qti_quiz)
+    when :multiple_answers_question
+      convert_multiple_answers(qti_quiz)
+    else
+      raise CanvasQuestionTypeNotSupportedError
+    end
+
+    add_files_to_assets(
+      assets,
+      [item_index, :stimulus],
+      question.stimulus
+    )
+
+    question.options.each.with_index do |option, index|
+      add_files_to_assets(
+        assets,
+        [item_index, :options, index, "label"],
+        option["label"]
+      )
+    end
+
+    question
+  end
+
+  def self.convert(qti, assets)
     quiz = CanvasQtiQuiz.new(qti_string: qti)
-    items = quiz.css("item").map do |item|
+    assessment = quiz.css("assessment")
+    ident = assessment.attribute("ident").value
+    assets[ident] = {}
+
+    items = quiz.css("item").map.with_index do |item, index|
       begin
         quiz_item = CanvasQtiQuizQuestion.new(qti_string: item.to_html)
-        convert_item(quiz_item)
+        convert_item(quiz_item, assets[ident], index)
       rescue CanvasQuestionTypeNotSupportedError
         nil
       end
     end.compact
 
-    assessment = quiz.css("assessment")
     {
       title: assessment.attribute("title").value,
-      ident: assessment.attribute("ident").value,
+      ident: ident,
       items: items,
     }
   end
@@ -211,11 +240,17 @@ module CanvasQtiToLearnosityConverter
       manifest = entry.get_input_stream.read
       parsed_manifest = Nokogiri.XML(manifest, &:noblanks)
       paths = imscc_quiz_paths(parsed_manifest)
-      result = paths.map do |qti_path|
+
+      assets = {}
+      converted_assesments = paths.map do |qti_path|
         qti = zip_file.find_entry(qti_path).get_input_stream.read
-        to_native_types(convert(qti))
+        to_native_types(convert(qti, assets))
       end
-      result
+
+      {
+        assessments: converted_assesments,
+        assets: assets,
+      }
     end
   end
 end
