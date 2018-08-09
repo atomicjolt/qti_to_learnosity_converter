@@ -105,9 +105,6 @@ module CanvasQtiToLearnosityConverter
         quiz_item.to_learnosity()
       rescue CanvasQuestionTypeNotSupportedError
         nil
-      rescue StandardError => e
-        puts e.message
-        puts e.backtrace
       end
     end.compact
 
