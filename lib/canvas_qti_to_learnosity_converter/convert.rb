@@ -136,7 +136,7 @@ module CanvasQtiToLearnosityConverter
       rescue CanvasQuestionTypeNotSupportedError
         nil
       end
-    end.compact
+    end
 
     {
       title: clean_title(assessment.attribute("title").value),

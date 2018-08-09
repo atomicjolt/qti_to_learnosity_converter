@@ -233,8 +233,8 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       learnosity = question.to_learnosity
 
       expect(question_type).to be :feature
-      expect(learnosity[:type]).to eq "clozetext"
-      expect(learnosity[:content]).to eq "<div><p>Roses are {{response}}, violets are {{response}}</p></div>"
+      expect(learnosity[:type]).to eq "sharedpassage"
+      expect(learnosity[:content]).to eq "<div><p>This is text. Do with it what you will.</p></div>"
     end
   end
 
@@ -246,7 +246,8 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(result[:title]).to eql("All Questions")
       expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
-      expect(result[:items].size).to eql 9
+      expect(result[:items][:questions].size).to eql 9
+      expect(result[:items][:features].size).to eql 2
     end
   end
 
