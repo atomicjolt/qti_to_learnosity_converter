@@ -14,6 +14,19 @@ require "canvas_qti_to_learnosity_converter/questions/file_upload"
 require "canvas_qti_to_learnosity_converter/questions/text_only"
 
 module CanvasQtiToLearnosityConverter
+  FEATURE_TYPES = [ :text_only_question ]
+  QUESTION_TYPES = [
+    :multiple_choice_question,
+    :true_false_question,
+    :multiple_answers_question,
+    :short_answer_question,
+    :fill_in_multiple_blanks_question,
+    :multiple_dropdowns_question,
+    :matching_question,
+    :essay_question,
+    :file_upload_question,
+  ]
+
   class CanvasQuestionTypeNotSupportedError < RuntimeError
   end
 
