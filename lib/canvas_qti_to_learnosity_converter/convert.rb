@@ -88,6 +88,10 @@ module CanvasQtiToLearnosityConverter
     end
   end
 
+  def self.clean_title(title)
+    title.gsub(/["']/, "")
+  end
+
   def self.convert(qti, assets)
     quiz = CanvasQtiQuiz.new(qti_string: qti)
     assessment = quiz.css("assessment")
@@ -108,7 +112,7 @@ module CanvasQtiToLearnosityConverter
     end.compact
 
     {
-      title: assessment.attribute("title").value,
+      title: clean_title(assessment.attribute("title").value),
       ident: ident,
       items: items,
     }
