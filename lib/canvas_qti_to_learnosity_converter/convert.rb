@@ -193,7 +193,7 @@ module CanvasQtiToLearnosityConverter
   end
 
   def self.clean_title(title)
-    title.gsub(/"/, "")
+    title.gsub(/["']/, "")
   end
 
   def self.convert(qti, assets)
