@@ -5,7 +5,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         build_item_from_file(fixture_path("learnosity_multiple_choice.json"))
       qti_quiz = CanvasQtiToLearnosityConverter.
         build_quiz_from_file fixture_path("multiple_choice.qti.xml")
-      result = CanvasQtiToLearnosityConverter.convert_item(qti_quiz, assets, 0)
+      result = CanvasQtiToLearnosityConverter.convert_item(qti_quiz, {}, 0)
       expect(result).to eql(expected_result)
     end
   end
