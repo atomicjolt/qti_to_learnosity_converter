@@ -11,6 +11,7 @@ require "canvas_qti_to_learnosity_converter/questions/multiple_dropdowns"
 require "canvas_qti_to_learnosity_converter/questions/matching"
 require "canvas_qti_to_learnosity_converter/questions/essay"
 require "canvas_qti_to_learnosity_converter/questions/file_upload"
+require "canvas_qti_to_learnosity_converter/questions/text_only"
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -64,7 +65,13 @@ module CanvasQtiToLearnosityConverter
     xml = Nokogiri.XML(qti_string, &:noblanks)
     type = extract_type(xml)
 
-    case type
+    if FEATURE_TYPES.include?(type)
+      learnosity_type = :feature
+    else
+      learnosity_type = :question
+    end
+
+    question = case type
     when :multiple_choice_question
       MultipleChoiceQuestion.new(xml)
     when :true_false_question
@@ -83,9 +90,13 @@ module CanvasQtiToLearnosityConverter
       EssayQuestion.new(xml)
     when :file_upload_question
       FileUploadQuestion.new(xml)
+    when :text_only_question
+      TextOnlyQuestion.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
+
+    [learnosity_type, question]
   end
 
   def self.clean_title(title)
@@ -98,11 +109,17 @@ module CanvasQtiToLearnosityConverter
     ident = assessment.attribute("ident").value
     assets[ident] = {}
 
-    items = quiz.css("item").map.with_index do |item, index|
+    items = { questions: [], features: [] }
+    quiz.css("item").each.with_index do |item, index|
       begin
-        quiz_item = convert_item(qti_string: item.to_html)
-        quiz_item.add_learnosity_assets(assets[ident], [index])
-        quiz_item.to_learnosity()
+        learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
+
+        items_key = learnosity_type == :question ? :questions : :features
+
+        items[items_key].push(quiz_item.to_learnosity)
+        path = [items_key, items[items_key].count - 1]
+
+        quiz_item.add_learnosity_assets(assets[ident], path)
       rescue CanvasQuestionTypeNotSupportedError
         nil
       end

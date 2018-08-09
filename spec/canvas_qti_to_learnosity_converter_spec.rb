@@ -3,10 +3,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic multiple choice question" do
       qti_file = File.new("spec/fixtures/multiple_choice.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "mcq"
       expect(learnosity[:stimulus]).to eq "<div><p>Test Multiple Choice, a is to?</p></div>"
 
@@ -37,10 +38,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic true false question" do
       qti_file = File.new("spec/fixtures/true_false.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "mcq"
       expect(learnosity[:stimulus]).to eq "<div><p>The grand canyon is deep?</p></div>"
 
@@ -60,7 +62,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic multiple answer question" do
       qti_file = File.new("spec/fixtures/multiple_answer.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -88,10 +90,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic matching question" do
       qti_file = File.new("spec/fixtures/matching.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "association"
       expect(learnosity[:stimulus]).to eq "<div><p>matching question</p></div>"
       expect(learnosity[:stimulus_list]).to eq([
@@ -117,7 +120,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic multiple dropdowns question" do
       qti_file = File.new("spec/fixtures/multiple_dropdowns.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -142,10 +145,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic short answer question" do
       qti_file = File.new("spec/fixtures/short_answer.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "shorttext"
       expect(learnosity[:stimulus]).to eq "<div><p>Fill in the</p></div>"
       expect(learnosity[:validation]).to eq({
@@ -164,10 +168,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic essay question" do
       qti_file = File.new("spec/fixtures/essay.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "longtextV2"
       expect(learnosity[:stimulus]).to eq "<div><p>What do you think?</p></div>"
     end
@@ -177,10 +182,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic file upload question" do
       qti_file = File.new("spec/fixtures/file_upload.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "fileupload"
       expect(learnosity[:stimulus]).to eq "<div><p>Give me a good file.</p></div>"
     end
@@ -190,10 +196,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic fill the blanks question" do
       qti_file = File.new("spec/fixtures/fill_blanks.qti.xml")
       qti = qti_file.read
-      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
+      expect(question_type).to be :question
       expect(learnosity[:type]).to eq "clozetext"
       expect(learnosity[:stimulus]).to eq ""
       expect(learnosity[:template]).to eq "<div><p>Roses are {{response}}, violets are {{response}}</p></div>"
@@ -213,6 +220,21 @@ RSpec.describe CanvasQtiToLearnosityConverter do
           {"value"=>["RED", "blue"]},
         ]
       })
+    end
+  end
+
+
+  describe "Text Only Question" do
+    it "handles a basic text only question" do
+      qti_file = File.new("spec/fixtures/text_only.qti.xml")
+      qti = qti_file.read
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to be :feature
+      expect(learnosity[:type]).to eq "clozetext"
+      expect(learnosity[:content]).to eq "<div><p>Roses are {{response}}, violets are {{response}}</p></div>"
     end
   end
 
@@ -236,4 +258,5 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(result[:assessments].first[:title]).to eql("All Questions")
     end
   end
+
 end
