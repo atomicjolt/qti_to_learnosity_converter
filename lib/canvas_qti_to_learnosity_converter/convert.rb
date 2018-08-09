@@ -79,9 +79,9 @@ module CanvasQtiToLearnosityConverter
     type = extract_type(xml)
 
     if FEATURE_TYPES.include?(type)
-      learnosity_type = :feature
+      learnosity_type = "feature"
     else
-      learnosity_type = :question
+      learnosity_type = "question"
     end
 
     question = case type
@@ -122,15 +122,14 @@ module CanvasQtiToLearnosityConverter
     ident = assessment.attribute("ident").value
     assets[ident] = {}
 
-    items = { questions: [], features: [] }
+    items = []
+
     quiz.css("item").each.with_index do |item, index|
       begin
         learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
-        items_key = learnosity_type == :question ? :questions : :features
-
-        items[items_key].push(quiz_item.to_learnosity)
-        path = [items_key, items[items_key].count - 1]
+        items.push({type: learnosity_type, data: quiz_item.to_learnosity})
+        path = [items.count - 1, :data]
 
         quiz_item.add_learnosity_assets(assets[ident], path)
       rescue CanvasQuestionTypeNotSupportedError
