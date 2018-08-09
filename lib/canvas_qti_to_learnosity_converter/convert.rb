@@ -4,6 +4,14 @@ require "ostruct"
 require "zip"
 require "uri"
 
+require "canvas_qti_to_learnosity_converter/questions/multiple_choice"
+require "canvas_qti_to_learnosity_converter/questions/short_answer"
+require "canvas_qti_to_learnosity_converter/questions/fill_the_blanks"
+require "canvas_qti_to_learnosity_converter/questions/multiple_dropdowns"
+require "canvas_qti_to_learnosity_converter/questions/matching"
+require "canvas_qti_to_learnosity_converter/questions/essay"
+require "canvas_qti_to_learnosity_converter/questions/file_upload"
+
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
   end
@@ -17,33 +25,6 @@ module CanvasQtiToLearnosityConverter
     end
   end
 
-  class CanvasQtiQuizQuestion
-    extend Forwardable
-    def_delegators :@xml, :css
-
-    def initialize(qti_string:)
-      @xml = Nokogiri.XML(qti_string, &:noblanks)
-    end
-  end
-
-  class LearnosityQuestion < OpenStruct
-  end
-
-  class MultipleChoiceLearnosityQuestion < LearnosityQuestion
-  end
-
-  class MultipleAnswersLearnosityQuestion < LearnosityQuestion
-  end
-
-  class Learnosityitem
-  end
-
-  class LearnosityActivity
-  end
-
-  LEARNOSITY_TYPE_MAP = {
-    "mcq" => MultipleChoiceLearnosityQuestion
-  }
 
   def self.read_file(path)
     file = File.new path
@@ -65,94 +46,6 @@ module CanvasQtiToLearnosityConverter
     qti_file.close
   end
 
-  def self.build_item_from_file(path, item_type = nil)
-    file = File.new path
-    file_val = JSON.parse(file.read)
-    type = item_type || LEARNOSITY_TYPE_MAP[file_val["type"]]
-    type.new(file_val)
-  ensure
-    file.close
-  end
-
-  def self.extract_type(item)
-    item.css(%{ item > itemmetadata > qtimetadata >
-      qtimetadatafield > fieldlabel:contains("question_type")})
-      &.first&.next&.text&.to_sym
-  end
-
-  def self.extract_mattext(mattext_node)
-    mattext_node.content
-  end
-
-  def self.extract_stimulus(item)
-    mattext = item.css("item > presentation > material > mattext").first
-    extract_mattext(mattext)
-  end
-
-  def self.extract_multiple_choice_options(item)
-    choices = item.css("item > presentation > response_lid > render_choice > response_label")
-    choices.map do |choice|
-      ident = choice.attribute("ident").value
-      {
-        "value" => ident,
-        "label" => extract_mattext(choice.css("material > mattext").first),
-      }
-    end
-  end
-
-  def self.extract_response_id(item)
-    item.css("item > presentation > response_lid").attribute("ident").value
-  end
-
-  def self.extract_multiple_choice_validation(item)
-    resp_conditions = item.css("item > resprocessing > respcondition")
-    correct_condition = resp_conditions.select do |condition|
-      setvar = condition.css("setvar")
-      setvar.length === 1 && setvar.text === "100"
-    end.first
-
-
-    # TODO check for more than 1 element
-    correct_value = correct_condition.css("varequal").text
-    {
-      "scoring_type" => "exactMatch",
-      "valid_response" => {
-        "value" => [correct_value],
-      },
-    }
-  end
-
-  def self.extract_multiple_answers_validation(item)
-    correct_condition = item.css('item > resprocessing > respcondition[continue="No"] > conditionvar > and > varequal')
-    alt_responses = correct_condition.map(&:text)
-    {
-      "scoring_type" => "partialMatch",
-      "alt_responses" => alt_responses,
-    }
-  end
-
-  def self.convert_multiple_choice(item)
-    MultipleChoiceLearnosityQuestion.new({
-      stimulus: extract_stimulus(item),
-      options: extract_multiple_choice_options(item),
-      multiple_responses: false,
-      response_id: extract_response_id(item),
-      type: "mcq",
-      validation: extract_multiple_choice_validation(item),
-    })
-  end
-
-  def self.convert_multiple_answers(item)
-    MultipleAnswersLearnosityQuestion.new({
-      stimulus: extract_stimulus(item),
-      options: extract_multiple_choice_options(item),
-      multiple_responses: true,
-      response_id: extract_response_id(item),
-      type: "mcq",
-      validation: extract_multiple_answers_validation(item),
-    })
-  end
-
   def self.add_files_to_assets(assets, path, text)
     text.scan(/%24IMS-CC-FILEBASE%24\/([^"]+)/).flatten.each do |asset_path|
       decoded_path = URI.unescape(asset_path)
@@ -161,35 +54,38 @@ module CanvasQtiToLearnosityConverter
     end
   end
 
-  def self.convert_item(qti_quiz, assets, item_index)
-    type = extract_type(qti_quiz)
+  def self.extract_type(xml)
+    xml.css(%{ item > itemmetadata > qtimetadata >
+      qtimetadatafield > fieldlabel:contains("question_type")})
+      &.first&.next&.text&.to_sym
+  end
 
-    question = case type
+  def self.convert_item(qti_string:)
+    xml = Nokogiri.XML(qti_string, &:noblanks)
+    type = extract_type(xml)
+
+    case type
     when :multiple_choice_question
-      convert_multiple_choice(qti_quiz)
+      MultipleChoiceQuestion.new(xml)
     when :true_false_question
-      convert_multiple_choice(qti_quiz)
+      MultipleChoiceQuestion.new(xml)
     when :multiple_answers_question
-      convert_multiple_answers(qti_quiz)
+      MultipleAnswersQuestion.new(xml)
+    when :short_answer_question
+      ShortAnswerQuestion.new(xml)
+    when :fill_in_multiple_blanks_question
+      FillTheBlanksQuestion.new(xml)
+    when :multiple_dropdowns_question
+      MultipleDropdownsQuestion.new(xml)
+    when :matching_question
+      MatchingQuestion.new(xml)
+    when :essay_question
+      EssayQuestion.new(xml)
+    when :file_upload_question
+      FileUploadQuestion.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
-
-    add_files_to_assets(
-      assets,
-      [item_index, :stimulus],
-      question.stimulus
-    )
-
-    question.options.each.with_index do |option, index|
-      add_files_to_assets(
-        assets,
-        [item_index, :options, index, "label"],
-        option["label"]
-      )
-    end
-
-    question
   end
 
   def self.clean_title(title)
@@ -204,8 +100,9 @@ module CanvasQtiToLearnosityConverter
 
     items = quiz.css("item").map.with_index do |item, index|
       begin
-        quiz_item = CanvasQtiQuizQuestion.new(qti_string: item.to_html)
-        convert_item(quiz_item, assets[ident], index)
+        quiz_item = convert_item(qti_string: item.to_html)
+        quiz_item.add_learnosity_assets(assets[ident], [index])
+        quiz_item.to_learnosity()
       rescue CanvasQuestionTypeNotSupportedError
         nil
       end
@@ -232,12 +129,6 @@ module CanvasQtiToLearnosityConverter
       map { |entry| entry.attribute("href").value }
   end
 
-  def self.to_native_types(activity)
-    clone = activity.clone
-    clone[:items] = activity[:items].map(&:to_h)
-    clone
-  end
-
   def self.convert_imscc_export(path)
     Zip::File.open(path) do |zip_file|
       entry = zip_file.find_entry("imsmanifest.xml")
@@ -248,7 +139,7 @@ module CanvasQtiToLearnosityConverter
       assets = {}
       converted_assesments = paths.map do |qti_path|
         qti = zip_file.find_entry(qti_path).get_input_stream.read
-        to_native_types(convert(qti, assets))
+        convert(qti, assets)
       end
 
       {
