@@ -11,6 +11,7 @@ require "canvas_qti_to_learnosity_converter/questions/multiple_dropdowns"
 require "canvas_qti_to_learnosity_converter/questions/matching"
 require "canvas_qti_to_learnosity_converter/questions/essay"
 require "canvas_qti_to_learnosity_converter/questions/file_upload"
+require "canvas_qti_to_learnosity_converter/questions/numerical"
 
 module CanvasQtiToLearnosityConverter
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -83,6 +84,8 @@ module CanvasQtiToLearnosityConverter
       EssayQuestion.new(xml)
     when :file_upload_question
       FileUploadQuestion.new(xml)
+    when :numerical_question
+      NumericalQuestion.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
