@@ -216,6 +216,31 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Numerical" do
+    it "handles a basic numerical question" do
+      qti_file = File.new("spec/fixtures/numerical.qti.xml")
+      qti = qti_file.read
+      question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(learnosity[:type]).to eq "formulaV2"
+      expect(learnosity[:stimulus]).to eq "<div><p>Numerical answer (1, 2, 3 or 1.2 work)</p></div>"
+      expect(learnosity[:validation]).to eq({
+        "scoring_type"=>"exactMatch",
+        "valid_response" => {
+          "value" => [{"method"=>"equivValue", "value"=>"1.2\\pm0.05"}]
+        },
+        "alt_responses"=> [
+          { "value"=>[{ "method"=> "equivValue", "value"=>"1.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"2.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"3.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"8.0\\pm3.0" }] },
+        ]
+      })
+    end
+  end
+
   describe "Convert canvas quiz items" do
     it "handles qti strings" do
       qti_string = CanvasQtiToLearnosityConverter.
@@ -224,7 +249,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(result[:title]).to eql("All Questions")
       expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
-      expect(result[:items].size).to eql 9
+      expect(result[:items].size).to eql 10
     end
   end
 
