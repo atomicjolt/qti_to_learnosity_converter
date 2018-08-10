@@ -11,9 +11,23 @@ require "canvas_qti_to_learnosity_converter/questions/multiple_dropdowns"
 require "canvas_qti_to_learnosity_converter/questions/matching"
 require "canvas_qti_to_learnosity_converter/questions/essay"
 require "canvas_qti_to_learnosity_converter/questions/file_upload"
+require "canvas_qti_to_learnosity_converter/questions/text_only"
 require "canvas_qti_to_learnosity_converter/questions/numerical"
 
 module CanvasQtiToLearnosityConverter
+  FEATURE_TYPES = [ :text_only_question ]
+  QUESTION_TYPES = [
+    :multiple_choice_question,
+    :true_false_question,
+    :multiple_answers_question,
+    :short_answer_question,
+    :fill_in_multiple_blanks_question,
+    :multiple_dropdowns_question,
+    :matching_question,
+    :essay_question,
+    :file_upload_question,
+  ]
+
   class CanvasQuestionTypeNotSupportedError < RuntimeError
   end
 
@@ -65,7 +79,13 @@ module CanvasQtiToLearnosityConverter
     xml = Nokogiri.XML(qti_string, &:noblanks)
     type = extract_type(xml)
 
-    case type
+    if FEATURE_TYPES.include?(type)
+      learnosity_type = "feature"
+    else
+      learnosity_type = "question"
+    end
+
+    question = case type
     when :multiple_choice_question
       MultipleChoiceQuestion.new(xml)
     when :true_false_question
@@ -84,11 +104,15 @@ module CanvasQtiToLearnosityConverter
       EssayQuestion.new(xml)
     when :file_upload_question
       FileUploadQuestion.new(xml)
+    when :text_only_question
+      TextOnlyQuestion.new(xml)
     when :numerical_question
       NumericalQuestion.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
+
+    [learnosity_type, question]
   end
 
   def self.clean_title(title)
@@ -101,15 +125,20 @@ module CanvasQtiToLearnosityConverter
     ident = assessment.attribute("ident").value
     assets[ident] = {}
 
-    items = quiz.css("item").map.with_index do |item, index|
+    items = []
+
+    quiz.css("item").each.with_index do |item, index|
       begin
-        quiz_item = convert_item(qti_string: item.to_html)
-        quiz_item.add_learnosity_assets(assets[ident], [index])
-        quiz_item.to_learnosity()
+        learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
+
+        items.push({type: learnosity_type, data: quiz_item.to_learnosity})
+        path = [items.count - 1, :data]
+
+        quiz_item.add_learnosity_assets(assets[ident], path)
       rescue CanvasQuestionTypeNotSupportedError
         nil
       end
-    end.compact
+    end
 
     {
       title: clean_title(assessment.attribute("title").value),
