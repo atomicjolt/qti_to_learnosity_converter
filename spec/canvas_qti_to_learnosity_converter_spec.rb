@@ -241,7 +241,6 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
-
   describe "Convert canvas quiz items" do
     it "handles qti strings" do
       qti_string = CanvasQtiToLearnosityConverter.
