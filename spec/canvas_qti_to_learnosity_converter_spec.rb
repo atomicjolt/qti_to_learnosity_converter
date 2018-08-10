@@ -7,7 +7,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "mcq"
       expect(learnosity[:stimulus]).to eq "<div><p>Test Multiple Choice, a is to?</p></div>"
 
@@ -42,7 +42,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "mcq"
       expect(learnosity[:stimulus]).to eq "<div><p>The grand canyon is deep?</p></div>"
 
@@ -94,7 +94,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "association"
       expect(learnosity[:stimulus]).to eq "<div><p>matching question</p></div>"
       expect(learnosity[:stimulus_list]).to eq([
@@ -149,7 +149,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "shorttext"
       expect(learnosity[:stimulus]).to eq "<div><p>Fill in the</p></div>"
       expect(learnosity[:validation]).to eq({
@@ -172,7 +172,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "longtextV2"
       expect(learnosity[:stimulus]).to eq "<div><p>What do you think?</p></div>"
     end
@@ -186,7 +186,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "fileupload"
       expect(learnosity[:stimulus]).to eq "<div><p>Give me a good file.</p></div>"
     end
@@ -200,7 +200,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :question
+      expect(question_type).to eq "question"
       expect(learnosity[:type]).to eq "clozetext"
       expect(learnosity[:stimulus]).to eq ""
       expect(learnosity[:template]).to eq "<div><p>Roses are {{response}}, violets are {{response}}</p></div>"
@@ -223,7 +223,6 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
-
   describe "Text Only Question" do
     it "handles a basic text only question" do
       qti_file = File.new("spec/fixtures/text_only.qti.xml")
@@ -232,9 +231,35 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       learnosity = question.to_learnosity
 
-      expect(question_type).to be :feature
+      expect(question_type).to eq "feature"
       expect(learnosity[:type]).to eq "sharedpassage"
       expect(learnosity[:content]).to eq "<div><p>This is text. Do with it what you will.</p></div>"
+    end
+  end
+
+  describe "Numerical" do
+    it "handles a basic numerical question" do
+      qti_file = File.new("spec/fixtures/numerical.qti.xml")
+      qti = qti_file.read
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "formulaV2"
+      expect(learnosity[:stimulus]).to eq "<div><p>Numerical answer (1, 2, 3 or 1.2 work)</p></div>"
+      expect(learnosity[:validation]).to eq({
+        "scoring_type"=>"exactMatch",
+        "valid_response" => {
+          "value" => [{"method"=>"equivValue", "value"=>"1.2\\pm0.05"}]
+        },
+        "alt_responses"=> [
+          { "value"=>[{ "method"=> "equivValue", "value"=>"1.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"2.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"3.0\\pm0.1" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"8.0\\pm3.0" }] },
+        ]
+      })
     end
   end
 
@@ -246,8 +271,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(result[:title]).to eql("All Questions")
       expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
-      expect(result[:items][:questions].size).to eql 9
-      expect(result[:items][:features].size).to eql 2
+      expect(result[:items].size).to eql 12
     end
   end
 

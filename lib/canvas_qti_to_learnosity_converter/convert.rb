@@ -12,6 +12,7 @@ require "canvas_qti_to_learnosity_converter/questions/matching"
 require "canvas_qti_to_learnosity_converter/questions/essay"
 require "canvas_qti_to_learnosity_converter/questions/file_upload"
 require "canvas_qti_to_learnosity_converter/questions/text_only"
+require "canvas_qti_to_learnosity_converter/questions/numerical"
 
 module CanvasQtiToLearnosityConverter
   FEATURE_TYPES = [ :text_only_question ]
@@ -105,6 +106,8 @@ module CanvasQtiToLearnosityConverter
       FileUploadQuestion.new(xml)
     when :text_only_question
       TextOnlyQuestion.new(xml)
+    when :numerical_question
+      NumericalQuestion.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
