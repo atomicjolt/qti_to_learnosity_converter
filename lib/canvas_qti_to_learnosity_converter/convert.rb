@@ -29,6 +29,21 @@ module CanvasQtiToLearnosityConverter
     :file_upload_question,
   ]
 
+  TYPE_MAP = {
+    multiple_choice_question: MultipleChoiceQuestion,
+    true_false_question: MultipleChoiceQuestion,
+    multiple_answers_question: MultipleAnswersQuestion,
+    short_answer_question: ShortAnswerQuestion,
+    fill_in_multiple_blanks_question: FillTheBlanksQuestion,
+    multiple_dropdowns_question: MultipleDropdownsQuestion,
+    matching_question: MatchingQuestion,
+    essay_question: EssayQuestion,
+    file_upload_question: FileUploadQuestion,
+    text_only_question: TextOnlyQuestion,
+    numerical_question: NumericalQuestion,
+    calculated_question: CalculatedQuestion,
+  }
+
   class CanvasQuestionTypeNotSupportedError < RuntimeError
   end
 
@@ -86,31 +101,10 @@ module CanvasQtiToLearnosityConverter
       learnosity_type = "question"
     end
 
-    question = case type
-    when :multiple_choice_question
-      MultipleChoiceQuestion.new(xml)
-    when :true_false_question
-      MultipleChoiceQuestion.new(xml)
-    when :multiple_answers_question
-      MultipleAnswersQuestion.new(xml)
-    when :short_answer_question
-      ShortAnswerQuestion.new(xml)
-    when :fill_in_multiple_blanks_question
-      FillTheBlanksQuestion.new(xml)
-    when :multiple_dropdowns_question
-      MultipleDropdownsQuestion.new(xml)
-    when :matching_question
-      MatchingQuestion.new(xml)
-    when :essay_question
-      EssayQuestion.new(xml)
-    when :file_upload_question
-      FileUploadQuestion.new(xml)
-    when :text_only_question
-      TextOnlyQuestion.new(xml)
-    when :numerical_question
-      NumericalQuestion.new(xml)
-    when :calculated_question
-      CalculatedQuestion.new(xml)
+    question_class = TYPE_MAP[type]
+
+    if question_class
+      question = question_class.new(xml)
     else
       raise CanvasQuestionTypeNotSupportedError
     end
