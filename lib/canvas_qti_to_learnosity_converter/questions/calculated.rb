@@ -52,19 +52,10 @@ module CanvasQtiToLearnosityConverter
       columns.push("answer")
 
       rows = Hash[values.map.with_index do |row, index|
-        [
-          make_identifier(),
-          {
-            values: row,
-            index: index,
-          },
-        ]
+        [make_identifier(), { values: row, index: index }]
       end]
 
-      {
-        cols: columns,
-        rows: rows,
-      }
+      { cols: columns, rows: rows }
     end
 
     def extract_dynamic_content_data()
