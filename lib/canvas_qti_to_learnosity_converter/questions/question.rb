@@ -21,5 +21,9 @@ module CanvasQtiToLearnosityConverter
     def make_identifier()
       SecureRandom.uuid
     end
+
+    def dynamic_content_data()
+      {}
+    end
   end
 end

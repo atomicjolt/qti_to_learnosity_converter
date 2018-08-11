@@ -134,7 +134,13 @@ module CanvasQtiToLearnosityConverter
       begin
         learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
-        items.push({type: learnosity_type, data: quiz_item.to_learnosity})
+        item = {
+          type: learnosity_type,
+          data: quiz_item.to_learnosity,
+          dynamic_content_data: quiz_item.dynamic_content_data()
+        }
+
+        items.push(item)
         path = [items.count - 1, :data]
 
         quiz_item.add_learnosity_assets(assets[ident], path)
