@@ -29,7 +29,7 @@ module CanvasQtiToLearnosityConverter
         "scoring_type" => "exactMatch",
         "valid_response" => {
           "value" => [[{
-            "method" => "equivSymbolic",
+            "method" => "equivValue",
             "value" => "{{var:answer}}\\pm#{pm}"
           }]]
         }
