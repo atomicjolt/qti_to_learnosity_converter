@@ -23,7 +23,7 @@ module CanvasQtiToLearnosityConverter
 
     def extract_validation()
       pm = @xml.css("item > itemproc_extension > calculated > answer_tolerance")
-        .first.text.to_f
+        .first.text
 
       {
         "scoring_type" => "exactMatch",
@@ -62,11 +62,11 @@ module CanvasQtiToLearnosityConverter
       template = get_template()
       vars = extract_template_values(template).map do |var_name|
         @xml.css(%{item > itemproc_extension > calculated > var_sets >
-          var_set > var[name="#{var_name}"]}).map { |node| node.text.to_f }
+          var_set > var[name="#{var_name}"]}).map { |node| node.text }
       end
 
       answers = @xml.css("item > itemproc_extension var_sets answer").map do |node|
-        node.text.to_f
+        node.text
       end
 
       vars.push(answers).transpose
