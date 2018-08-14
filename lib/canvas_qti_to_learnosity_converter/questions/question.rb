@@ -1,3 +1,5 @@
+require "securerandom"
+
 module CanvasQtiToLearnosityConverter
   class QuizQuestion
     extend Forwardable
@@ -14,6 +16,14 @@ module CanvasQtiToLearnosityConverter
 
     def extract_mattext(mattext_node)
       mattext_node.content
+    end
+
+    def make_identifier()
+      SecureRandom.uuid
+    end
+
+    def dynamic_content_data()
+      {}
     end
   end
 end

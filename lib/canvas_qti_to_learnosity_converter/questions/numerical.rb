@@ -24,7 +24,6 @@ module CanvasQtiToLearnosityConverter
       end
 
       answer_bounds = response_mins.zip(response_maxs).map do |bounds|
-        puts bounds.inspect
         # Get the precision by counting the number of places after the decimal
         precision = [
           bounds.first.split(".").last.length,

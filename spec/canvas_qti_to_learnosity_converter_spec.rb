@@ -263,6 +263,33 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Calculated" do
+    it "handles a basic calculated question" do
+      qti_file = File.new("spec/fixtures/calculated.qti.xml")
+      qti = qti_file.read
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+
+      dynamic_data = question.dynamic_content_data()
+
+      expect(dynamic_data[:cols]).to eq(["val0", "val1", "val2", "answer"])
+      expect(dynamic_data[:rows].keys.count).to eq 10
+      row_key = dynamic_data[:rows].keys.first
+      expect(dynamic_data[:rows][row_key][:values].count).to eq 4
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "clozeformula"
+      expect(learnosity[:stimulus]).to eq "<div><p>1 + {{var:val0}} + {{var:val1}} + {{var:val2}} = ?</p></div>"
+      expect(learnosity[:template]).to eq "{{response}}"
+      expect(learnosity[:validation]).to eq({
+        "scoring_type"=>"exactMatch",
+        "valid_response" => {
+          "value" => [[{"method"=>"equivSymbolic", "value"=>"{{var:answer}}\\pm0.23"}]]
+        }
+      })
+    end
+  end
+
   describe "Convert canvas quiz items" do
     it "handles qti strings" do
       qti_string = CanvasQtiToLearnosityConverter.
@@ -271,7 +298,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(result[:title]).to eql("All Questions")
       expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
-      expect(result[:items].size).to eql 12
+      expect(result[:items].size).to eql 13
     end
   end
 
