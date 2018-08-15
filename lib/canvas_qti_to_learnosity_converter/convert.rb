@@ -45,6 +45,11 @@ module CanvasQtiToLearnosityConverter
   }
 
   class CanvasQuestionTypeNotSupportedError < RuntimeError
+    attr_reader :question_type
+    def initialize(question_type)
+      @question_type = question_type.to_s
+      super("Unsupported question type #{@question_type}")
+    end
   end
 
   class CanvasQtiQuiz
@@ -106,7 +111,7 @@ module CanvasQtiToLearnosityConverter
     if question_class
       question = question_class.new(xml)
     else
-      raise CanvasQuestionTypeNotSupportedError
+      raise CanvasQuestionTypeNotSupportedError.new(type)
     end
 
     [learnosity_type, question]
@@ -116,11 +121,12 @@ module CanvasQtiToLearnosityConverter
     title.gsub(/["']/, "")
   end
 
-  def self.convert(qti, assets)
+  def self.convert(qti, assets, errors)
     quiz = CanvasQtiQuiz.new(qti_string: qti)
     assessment = quiz.css("assessment")
     ident = assessment.attribute("ident").value
     assets[ident] = {}
+    errors[ident] = []
 
     items = []
 
@@ -138,8 +144,19 @@ module CanvasQtiToLearnosityConverter
         path = [items.count - 1, :data]
 
         quiz_item.add_learnosity_assets(assets[ident], path)
-      rescue CanvasQuestionTypeNotSupportedError
-        nil
+      rescue CanvasQuestionTypeNotSupportedError => e
+        errors[ident].push({
+          index: index,
+          error_type: "unsupported_question",
+          question_type: e.question_type.to_s,
+          message: e.message,
+        })
+      rescue StandardError => e
+        errors[ident].push({
+          index: index,
+          error_type: e.class.to_s,
+          message: e.message,
+        })
       end
     end
 
@@ -172,14 +189,16 @@ module CanvasQtiToLearnosityConverter
       paths = imscc_quiz_paths(parsed_manifest)
 
       assets = {}
+      errors = {}
       converted_assesments = paths.map do |qti_path|
         qti = zip_file.find_entry(qti_path).get_input_stream.read
-        convert(qti, assets)
+        convert(qti, assets, errors)
       end
 
       {
         assessments: converted_assesments,
         assets: assets,
+        errors: errors,
       }
     end
   end
