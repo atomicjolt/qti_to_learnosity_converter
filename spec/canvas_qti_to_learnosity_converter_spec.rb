@@ -34,6 +34,34 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "assets" do
+    it "detects assets" do
+      qti_file = File.new("spec/fixtures/assets.qti.xml")
+      qti = qti_file.read
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      assets = {}
+      question.add_learnosity_assets(assets, [:asset_path])
+
+      expect(assets).to eq({
+        "Uploaded Media/apple-1.jpeg" => [[:asset_path, :stimulus]],
+        "Uploaded Media/apple-2.jpeg" => [[:asset_path, :stimulus]],
+      })
+    end
+    it "detects newer style assets" do
+      qti_file = File.new("spec/fixtures/assets_new_style.qti.xml")
+      qti = qti_file.read
+      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      assets = {}
+      question.add_learnosity_assets(assets, [:asset_path])
+
+      expect(assets).to eq({
+        "Uploaded Media/apple-1.jpeg" => [[:asset_path, :stimulus]],
+        "Uploaded Media/apple-2.jpeg" => [[:asset_path, :stimulus]],
+      })
+
+    end
+  end
+
   describe "True False" do
     it "handles a basic true false question" do
       qti_file = File.new("spec/fixtures/true_false.qti.xml")
@@ -284,7 +312,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:validation]).to eq({
         "scoring_type"=>"exactMatch",
         "valid_response" => {
-          "value" => [[{"method"=>"equivSymbolic", "value"=>"{{var:answer}}\\pm0.23"}]]
+          "value" => [[{"method"=>"equivValue", "value"=>"{{var:answer}}\\pm0.23"}]]
         }
       })
     end
@@ -294,7 +322,8 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles qti strings" do
       qti_string = CanvasQtiToLearnosityConverter.
         read_file(fixture_path("all_question_types.qti.xml"))
-      result = CanvasQtiToLearnosityConverter.convert(qti_string, {})
+
+      result = CanvasQtiToLearnosityConverter.convert(qti_string, {}, {})
 
       expect(result[:title]).to eql("All Questions")
       expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
