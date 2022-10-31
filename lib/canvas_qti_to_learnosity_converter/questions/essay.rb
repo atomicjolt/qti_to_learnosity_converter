@@ -6,6 +6,9 @@ module CanvasQtiToLearnosityConverter
       {
         type: "longtextV2",
         stimulus: extract_stimulus(),
+        validation: {
+          max_score: extract_points_possible,
+        },
       }
     end
 

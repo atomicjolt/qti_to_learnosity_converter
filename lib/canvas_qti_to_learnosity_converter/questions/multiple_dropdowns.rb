@@ -28,9 +28,11 @@ module CanvasQtiToLearnosityConverter
       end.flatten
 
       {
-        "scoring_type" => "partialMatch",
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
         "valid_response" => {
           "value" => valid_responses,
+          "score" => extract_points_possible,
         }
       }
     end

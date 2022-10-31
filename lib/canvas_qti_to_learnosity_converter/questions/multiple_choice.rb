@@ -30,6 +30,7 @@ module CanvasQtiToLearnosityConverter
         "scoring_type" => "exactMatch",
         "valid_response" => {
           "value" => [correct_value],
+          "score" => extract_points_possible,
         },
       }
     end
@@ -81,8 +82,13 @@ module CanvasQtiToLearnosityConverter
                                    and > varequal')
       alt_responses = correct_condition.map(&:text)
       {
-        "scoring_type" => "partialMatch",
-        "alt_responses" => alt_responses,
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
+        "penalty" => extract_points_possible,
+        "valid_response" => {
+          "score" => extract_points_possible,
+          "value" => alt_responses,
+        },
       }
     end
   end

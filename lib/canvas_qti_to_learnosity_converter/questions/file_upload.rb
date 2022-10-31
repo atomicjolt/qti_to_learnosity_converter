@@ -6,6 +6,9 @@ module CanvasQtiToLearnosityConverter
       {
         type: "fileupload",
         stimulus: extract_stimulus(),
+        validation: {
+          max_score: extract_points_possible,
+        },
         allow_pdf: true,
         allow_jpg: true,
         allow_gif: true,

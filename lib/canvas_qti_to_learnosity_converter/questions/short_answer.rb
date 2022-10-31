@@ -20,11 +20,11 @@ module CanvasQtiToLearnosityConverter
     def extract_validation()
       correct_responses = @xml.css('item > resprocessing >
         respcondition[continue="No"] > conditionvar > varequal')
-      correct_response = { "value" => correct_responses.shift.text }
+      correct_response = { "value" => correct_responses.shift.text, "score" => extract_points_possible}
       {
         "scoring_type" => "exactMatch",
         "valid_response" => correct_response,
-        "alt_responses" => correct_responses.map { |res| { "value" => res.text } }
+        "alt_responses" => correct_responses.map { |res| { "value" => res.text, "score" => extract_points_possible } }
       }
     end
 

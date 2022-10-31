@@ -83,8 +83,8 @@ module CanvasQtiToLearnosityConverter
   end
 
   def self.add_files_to_assets(assets, path, text)
-    text.scan(/%24IMS-CC-FILEBASE%24\/([^"]+)/).flatten.each do |asset_path|
-      decoded_path = URI.unescape(asset_path)
+    text.scan(/(%24|\$)IMS-CC-FILEBASE\1\/([^"]+)/) do |_delimiter, asset_path|
+      decoded_path = CGI.unescape(asset_path)
       assets[decoded_path] ||= []
       assets[decoded_path].push(path)
     end
@@ -132,9 +132,11 @@ module CanvasQtiToLearnosityConverter
 
     quiz.css("item").each.with_index do |item, index|
       begin
+        item_title = item.attribute("title").value
         learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
         item = {
+          title: item_title,
           type: learnosity_type,
           data: quiz_item.to_learnosity,
           dynamic_content_data: quiz_item.dynamic_content_data()
