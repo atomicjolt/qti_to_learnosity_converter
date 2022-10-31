@@ -42,7 +42,8 @@ module CanvasQtiToLearnosityConverter
       create_responses(responses, 0, all_responses, [])
 
       {
-        "scoring_type" => "partialMatch",
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
         "valid_response" => all_responses.shift,
         "alt_responses" => all_responses
       }
@@ -50,7 +51,7 @@ module CanvasQtiToLearnosityConverter
 
     def create_responses(blank_responses, depth, result, current_response)
       if depth == blank_responses.count
-        result.push({ "value" => current_response })
+        result.push({ "score" => extract_points_possible, "value" => current_response })
         return
       end
 

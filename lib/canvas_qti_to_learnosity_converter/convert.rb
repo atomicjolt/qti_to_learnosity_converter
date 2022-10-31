@@ -132,9 +132,11 @@ module CanvasQtiToLearnosityConverter
 
     quiz.css("item").each.with_index do |item, index|
       begin
+        item_title = item.attribute("title").value
         learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
         item = {
+          title: item_title,
           type: learnosity_type,
           data: quiz_item.to_learnosity,
           dynamic_content_data: quiz_item.dynamic_content_data()

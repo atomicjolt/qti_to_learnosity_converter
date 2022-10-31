@@ -41,6 +41,7 @@ module CanvasQtiToLearnosityConverter
           "value" => [{
             "method" => "equivValue",
             "value" => "#{bounds[:center]}\\pm#{bounds[:pm]}",
+            "score" => extract_points_possible,
           }]
         }
       end

@@ -14,6 +14,12 @@ module CanvasQtiToLearnosityConverter
       extract_mattext(mattext)
     end
 
+    def extract_points_possible
+      @xml.css(%{ item > itemmetadata > qtimetadata >
+        qtimetadatafield > fieldlabel:contains("points_possible")})
+        &.first&.next&.text&.to_f || 1.0
+    end
+
     def extract_mattext(mattext_node)
       mattext_node.content
     end

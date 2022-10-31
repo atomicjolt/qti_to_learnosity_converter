@@ -29,6 +29,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         "scoring_type" => "exactMatch",
         "valid_response" => {
           "value" => ["1487"],
+          "score" => 3.0,
         }
       })
     end
@@ -81,7 +82,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(learnosity[:validation]).to eq({
         "scoring_type" => "exactMatch",
-        "valid_response" => { "value"=>["7161"] },
+        "valid_response" => { "value"=>["7161"], "score"=>3.0 },
       })
     end
   end
@@ -106,8 +107,13 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       ]
 
       expect(learnosity[:validation]).to eq({
-        "scoring_type"=>"partialMatch",
-        "alt_responses"=>["9078", "5022", "9720"]
+        "scoring_type"=>"partialMatchV2",
+        "rounding"=>"none",
+        "penalty"=>3,
+        "valid_response"=>{
+          "score"=>3.0,
+          "value"=>["9078", "5022", "9720"],
+        },
       })
 
       expect(learnosity[:multiple_responses]).to eq true
@@ -123,21 +129,19 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       learnosity = question.to_learnosity
 
       expect(question_type).to eq "question"
-      expect(learnosity[:type]).to eq "association"
+      expect(learnosity[:type]).to eq "clozedropdown"
       expect(learnosity[:stimulus]).to eq "<div><p>matching question</p></div>"
-      expect(learnosity[:stimulus_list]).to eq([
-        "left 1", "left 2", "left 3"
-      ])
+      expect(learnosity[:template]).to eq("<p>left 1 {{response}}</p>\n<p>left 2 {{response}}</p>\n<p>left 3 {{response}}</p>")
 
       expect(learnosity[:validation]).to eq({
-        "scoring_type" => "partialMatch",
-        "valid_response" => {
-          "value" => ["right 1", "right 2", "right 3"],
-        }
+         "rounding"=>"none",
+         "scoring_type"=>"partialMatchV2",
+         "valid_response"=>{"score"=>3.0, "value"=>["right 1", "right 2", "right 3"]}
       })
 
+      possible_responses = ["right 1", "right 2", "right 3", "wrong 1", "wrong 2", "wrong 3"]
       expect(learnosity[:possible_responses]).to eq([
-        "right 1", "right 2", "right 3", "wrong 1", "wrong 2", "wrong 3"
+        possible_responses, possible_responses, possible_responses,
       ])
 
       expect(learnosity[:duplicate_responses]).to eq(true)
@@ -156,8 +160,10 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:stimulus]).to eq ""
       expect(learnosity[:template]).to eq "<div><p>multiple dropdowns {{response}} {{response}}</p></div>"
       expect(learnosity[:validation]).to eq({
-        "scoring_type" => "partialMatch",
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
         "valid_response" => {
+          "score" => 3.0,
           "value" => ["right", "right"],
         }
       })
@@ -182,11 +188,11 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:stimulus]).to eq "<div><p>Fill in the</p></div>"
       expect(learnosity[:validation]).to eq({
         "scoring_type"=>"exactMatch",
-        "valid_response"=>{"value"=>"Blank"},
+        "valid_response"=>{"value"=>"Blank", "score"=>2.0},
         "alt_responses"=>[
-          {"value"=>"blank"},
-          {"value"=>"space"},
-          {"value"=>"empty spot"},
+          {"value"=>"blank", "score"=>2.0},
+          {"value"=>"space", "score"=>2.0},
+          {"value"=>"empty spot", "score"=>2.0},
         ]
       })
     end
@@ -233,19 +239,21 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:stimulus]).to eq ""
       expect(learnosity[:template]).to eq "<div><p>Roses are {{response}}, violets are {{response}}</p></div>"
       expect(learnosity[:validation]).to eq({
-        "scoring_type" => "partialMatch",
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
         "valid_response" => {
-          "value"=>["Red", "Blue"]
+          "value"=>["Red", "Blue"],
+          "score"=>2.0,
         },
         "alt_responses" => [
-          {"value"=>["Red", "BLUE"]},
-          {"value"=>["Red", "blue"]},
-          {"value"=>["red", "Blue"]},
-          {"value"=>["red", "BLUE"]},
-          {"value"=>["red", "blue"]},
-          {"value"=>["RED", "Blue"]},
-          {"value"=>["RED", "BLUE"]},
-          {"value"=>["RED", "blue"]},
+          {"value"=>["Red", "BLUE"], "score"=>2.0},
+          {"value"=>["Red", "blue"], "score"=>2.0},
+          {"value"=>["red", "Blue"], "score"=>2.0},
+          {"value"=>["red", "BLUE"], "score"=>2.0},
+          {"value"=>["red", "blue"], "score"=>2.0},
+          {"value"=>["RED", "Blue"], "score"=>2.0},
+          {"value"=>["RED", "BLUE"], "score"=>2.0},
+          {"value"=>["RED", "blue"], "score"=>2.0},
         ]
       })
     end
@@ -279,13 +287,13 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:validation]).to eq({
         "scoring_type"=>"exactMatch",
         "valid_response" => {
-          "value" => [{"method"=>"equivValue", "value"=>"1.2\\pm0.05"}]
+          "value" => [{"method"=>"equivValue", "value"=>"1.2\\pm0.05", "score"=>2.0}]
         },
         "alt_responses"=> [
-          { "value"=>[{ "method"=> "equivValue", "value"=>"1.0\\pm0.1" }] },
-          { "value"=>[{ "method"=> "equivValue", "value"=>"2.0\\pm0.1" }] },
-          { "value"=>[{ "method"=> "equivValue", "value"=>"3.0\\pm0.1" }] },
-          { "value"=>[{ "method"=> "equivValue", "value"=>"8.0\\pm3.0" }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"1.0\\pm0.1", "score"=>2.0 }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"2.0\\pm0.1", "score"=>2.0 }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"3.0\\pm0.1", "score"=>2.0 }] },
+          { "value"=>[{ "method"=> "equivValue", "value"=>"8.0\\pm3.0", "score"=>2.0 }] },
         ]
       })
     end
@@ -312,6 +320,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(learnosity[:validation]).to eq({
         "scoring_type"=>"exactMatch",
         "valid_response" => {
+          "score" => 3.0,
           "value" => [[{"method"=>"equivValue", "value"=>"{{var:answer}}\\pm0.23"}]]
         }
       })

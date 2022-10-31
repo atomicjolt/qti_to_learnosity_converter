@@ -28,6 +28,7 @@ module CanvasQtiToLearnosityConverter
       {
         "scoring_type" => "exactMatch",
         "valid_response" => {
+          "score" => extract_points_possible,
           "value" => [[{
             "method" => "equivValue",
             "value" => "{{var:answer}}\\pm#{pm}"

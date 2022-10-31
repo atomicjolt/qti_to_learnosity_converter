@@ -4,19 +4,20 @@ module CanvasQtiToLearnosityConverter
   class MatchingQuestion < QuizQuestion
     def to_learnosity
       {
-        type: "association",
+        type: "clozedropdown",
         stimulus: extract_stimulus(),
-        stimulus_list: extract_stimulus_list(),
+        template: extract_template(),
         validation: extract_validation(),
         possible_responses: extract_responses(),
         duplicate_responses: true,
+        shuffle_options: true,
       }
     end
 
-    def extract_stimulus_list()
+    def extract_template()
       @xml.css("item > presentation > response_lid > material > mattext").map do |node|
-        extract_mattext(node)
-      end
+        "<p>#{extract_mattext(node)} {{response}}</p>"
+      end.join("\n")
     end
 
     def extract_response_idents()
@@ -48,18 +49,20 @@ module CanvasQtiToLearnosityConverter
       end.flatten
 
       {
-        "scoring_type" => "partialMatch",
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
         "valid_response" => {
-          "value" => valid_responses
+          "value" => valid_responses,
+          "score" => extract_points_possible,
         }
       }
     end
 
     def extract_responses()
-      response_node = @xml.css("item > presentation > response_lid").first
-
-      response_node.css("response_label mattext").map do |node|
-        extract_mattext(node)
+      @xml.css("item > presentation > response_lid").map do |response|
+        response.css("response_label mattext").map do |node|
+          extract_mattext(node)
+        end
       end
     end
 
