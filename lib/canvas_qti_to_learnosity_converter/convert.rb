@@ -84,7 +84,7 @@ module CanvasQtiToLearnosityConverter
 
   def self.add_files_to_assets(assets, path, text)
     text.scan(/(%24|\$)IMS-CC-FILEBASE\1\/([^"]+)/) do |_delimiter, asset_path|
-      decoded_path = CGI.unescape(asset_path)
+      decoded_path = URI::DEFAULT_PARSER.unescape(asset_path)
       assets[decoded_path] ||= []
       assets[decoded_path].push(path)
     end
