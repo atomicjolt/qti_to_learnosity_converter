@@ -347,6 +347,30 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(result[:assessments].size).to eql(1)
       expect(result[:assessments].first[:title]).to eql("All Questions")
     end
+
+    it "Converts a Canvas course export package" do
+      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(result[:assessments].size).to eql(2)
+      expect(result[:assessments][0][:title]).to eql("All Questions")
+      expect(result[:assessments][0][:items].count).to eql(13)
+    end
+
+    it "Converts Canvas new quizzes" do
+      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(result[:assessments].size).to eql(2)
+      expect(result[:assessments][1][:title]).to eql("All Questions New Quizzes")
+      expect(result[:assessments][1][:items].count).to eql(13)
+    end
+
+    it "Converts a D2L CC export package" do
+      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("D2LCCExport.imscc"))
+
+      expect(result[:assessments].size).to eql(1)
+      expect(result[:assessments][0][:title]).to eql("Quiz1")
+      expect(result[:assessments][0][:items].count).to eql(4)
+    end
   end
 
 end

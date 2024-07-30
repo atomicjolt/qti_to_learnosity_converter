@@ -42,6 +42,12 @@ module CanvasQtiToLearnosityConverter
     text_only_question: TextOnlyQuestion,
     numerical_question: NumericalQuestion,
     calculated_question: CalculatedQuestion,
+
+    "cc.multiple_choice.v0p1": MultipleChoiceQuestion,
+    "cc.multiple_response.v0p1": MultipleAnswersQuestion,
+    "cc.fib.v0p1": ShortAnswerQuestion,
+    "cc.true_false.v0p1": MultipleChoiceQuestion,
+    "cc.essay.v0p1": EssayQuestion,
   }
 
   class CanvasQuestionTypeNotSupportedError < RuntimeError
@@ -93,7 +99,10 @@ module CanvasQtiToLearnosityConverter
   def self.extract_type(xml)
     xml.css(%{ item > itemmetadata > qtimetadata >
       qtimetadatafield > fieldlabel:contains("question_type")})
-      &.first&.next&.text&.to_sym
+      &.first&.next&.text&.to_sym ||
+      xml.css(%{ item > itemmetadata > qtimetadata >
+        qtimetadatafield > fieldlabel:contains("cc_profile")})
+        &.first&.next&.text&.to_sym
   end
 
   def self.convert_item(qti_string:)
@@ -132,7 +141,9 @@ module CanvasQtiToLearnosityConverter
 
     quiz.css("item").each.with_index do |item, index|
       begin
-        item_title = item.attribute("title").value
+        next if item.children.length == 0
+
+        item_title = item.attribute("title")&.value || ''
         learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
         item = {
@@ -179,8 +190,22 @@ module CanvasQtiToLearnosityConverter
   end
 
   def self.imscc_quiz_paths(parsed_manifest)
-    parsed_manifest.css("resources > resource[type='imsqti_xmlv1p2'] > file").
-      map { |entry| entry.attribute("href").value }
+    resources = parsed_manifest.css("resources > resource[type^='imsqti_xmlv1p2']")
+    resources.map do |entry|
+      resource_path(parsed_manifest, entry)
+    end
+  end
+
+  def self.resource_path(parsed_manifest, entry)
+    # Use the Canvas non_cc_assignment qti path when possible.  This works for both classic and new quizzes
+    entry.css("dependency").each do |dependency|
+      ref = dependency.attribute("identifierref").value
+      parsed_manifest.css(%{resources > resource[identifier="#{ref}"] > file}).each do |file|
+        path = file.attribute("href").value
+        return path if path.match?(/^non_cc_assessments/)
+      end
+    end
+    entry.css("file").first&.attribute("href")&.value
   end
 
   def self.convert_imscc_export(path)
