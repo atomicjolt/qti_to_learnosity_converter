@@ -37,13 +37,13 @@ module CanvasQtiToLearnosityConverter
       }
     end
 
-    def add_learnosity_assets(assets, path)
-      learnosity = to_learnosity
-      CanvasQtiToLearnosityConverter.add_files_to_assets(
+    def add_learnosity_assets(assets, path, learnosity)
+      process_assets!(
         assets,
-        path + [:stimulus],
+        path,
         learnosity[:stimulus]
       )
+      learnosity
     end
 
     def dynamic_content_data()

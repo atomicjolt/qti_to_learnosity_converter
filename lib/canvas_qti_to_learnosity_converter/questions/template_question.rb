@@ -26,14 +26,13 @@ module CanvasQtiToLearnosityConverter
       extract_mattext(template_node_list.first)
     end
 
-    def add_learnosity_assets(assets, path)
-      learnosity = to_learnosity
-
-      CanvasQtiToLearnosityConverter.add_files_to_assets(
+    def add_learnosity_assets(assets, path, learnosity)
+      process_assets!(
         assets,
-        path + [:template],
+        path,
         learnosity[:template]
       )
+      learnosity
     end
   end
 end
