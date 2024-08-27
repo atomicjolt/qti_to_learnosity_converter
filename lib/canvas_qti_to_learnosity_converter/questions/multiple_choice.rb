@@ -46,21 +46,21 @@ module CanvasQtiToLearnosityConverter
       }
     end
 
-    def add_learnosity_assets(assets, path)
-      learnosity = to_learnosity
-      CanvasQtiToLearnosityConverter.add_files_to_assets(
+    def add_learnosity_assets(assets, path, learnosity)
+      process_assets!(
         assets,
-        path + [:stimulus],
+        path,
         learnosity[:stimulus]
       )
 
       learnosity[:options].each.with_index do |option, index|
-        CanvasQtiToLearnosityConverter.add_files_to_assets(
+        process_assets!(
           assets,
-          path + [:options, index, "label"],
+          path,
           option["label"]
         )
       end
+      learnosity
     end
   end
 

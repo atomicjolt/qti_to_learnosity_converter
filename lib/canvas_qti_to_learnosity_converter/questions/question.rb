@@ -31,5 +31,34 @@ module CanvasQtiToLearnosityConverter
     def dynamic_content_data()
       {}
     end
+
+    def process_assets!(assets, path, text)
+      doc = Nokogiri::XML.fragment(text)
+      changed = false
+      doc.css("img").each do |node|
+        source = node["src"]
+        next if !source
+
+        source = URI::DEFAULT_PARSER.unescape(source)
+        if /^\$IMS-CC-FILEBASE\$(.*)/.match(source) || /^((?!https?:).*)/.match(source)
+          if source.start_with?("$IMS-CC-FILEBASE$")
+            path = ''
+          end
+          asset_path = $1
+          asset_path = asset_path.split("?").first.gsub(/^\//, '')
+          asset_path = File.join(path, asset_path)
+          clean_ext = File.extname(asset_path).gsub(/[^a-z0-9_.-]/i, '')
+          assets[asset_path] ||= "#{SecureRandom.uuid}#{clean_ext}"
+          node["src"] = "___EXPORT_ROOT___/assets/#{assets[asset_path]}"
+          changed = true
+        end
+      end
+      text.replace(doc.to_xml) if changed
+    end
+
+    def convert(assets, path)
+      object = to_learnosity
+      add_learnosity_assets(assets, path, object)
+    end
   end
 end

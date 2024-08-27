@@ -1,9 +1,11 @@
 RSpec.describe CanvasQtiToLearnosityConverter do
+  subject { CanvasQtiToLearnosityConverter::Converter.new }
+
   describe "multiple choice" do
     it "handles a basic multiple choice question" do
       qti_file = File.new("spec/fixtures/multiple_choice.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -39,27 +41,26 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "detects assets" do
       qti_file = File.new("spec/fixtures/assets.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
       assets = {}
-      question.add_learnosity_assets(assets, [:asset_path])
+      question.add_learnosity_assets(assets, [:asset_path], question.to_learnosity)
 
-      expect(assets).to eq({
-        "Uploaded Media/apple-1.jpeg" => [[:asset_path, :stimulus]],
-        "Uploaded Media/apple-2.jpeg" => [[:asset_path, :stimulus]],
+      expect(assets).to match({
+        "/Uploaded Media/apple-1.jpeg" => end_with('.jpeg'),
+        "/Uploaded Media/apple-2.jpeg" => end_with('.jpeg'),
       })
     end
     it "detects newer style assets" do
       qti_file = File.new("spec/fixtures/assets_new_style.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
       assets = {}
-      question.add_learnosity_assets(assets, [:asset_path])
+      question.add_learnosity_assets(assets, [:asset_path], question.to_learnosity)
 
-      expect(assets).to eq({
-        "Uploaded Media/apple-1.jpeg" => [[:asset_path, :stimulus]],
-        "Uploaded Media/apple-2.jpeg" => [[:asset_path, :stimulus]],
+      expect(assets).to match({
+        "/Uploaded Media/apple-1.jpeg" => end_with('.jpeg'),
+        "/Uploaded Media/apple-2.jpeg" => end_with('.jpeg'),
       })
-
     end
   end
 
@@ -67,7 +68,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic true false question" do
       qti_file = File.new("spec/fixtures/true_false.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -91,7 +92,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic multiple answer question" do
       qti_file = File.new("spec/fixtures/multiple_answer.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -124,7 +125,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic matching question" do
       qti_file = File.new("spec/fixtures/matching.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -152,7 +153,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic multiple dropdowns question" do
       qti_file = File.new("spec/fixtures/multiple_dropdowns.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -179,7 +180,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic short answer question" do
       qti_file = File.new("spec/fixtures/short_answer.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -202,7 +203,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic essay question" do
       qti_file = File.new("spec/fixtures/essay.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -216,7 +217,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic file upload question" do
       qti_file = File.new("spec/fixtures/file_upload.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -230,7 +231,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic fill the blanks question" do
       qti_file = File.new("spec/fixtures/fill_blanks.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -263,7 +264,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic text only question" do
       qti_file = File.new("spec/fixtures/text_only.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -277,7 +278,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic numerical question" do
       qti_file = File.new("spec/fixtures/numerical.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       learnosity = question.to_learnosity
 
@@ -303,7 +304,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "handles a basic calculated question" do
       qti_file = File.new("spec/fixtures/calculated.qti.xml")
       qti = qti_file.read
-      question_type, question = CanvasQtiToLearnosityConverter.convert_item(qti_string: qti)
+      question_type, question = subject.convert_item(qti_string: qti)
 
       dynamic_data = question.dynamic_content_data()
 
@@ -329,48 +330,189 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
   describe "Convert canvas quiz items" do
     it "handles qti strings" do
-      qti_string = CanvasQtiToLearnosityConverter.
-        read_file(fixture_path("all_question_types.qti.xml"))
+      qti_string = File.read(fixture_path("all_question_types.qti.xml"))
 
-      result = CanvasQtiToLearnosityConverter.convert(qti_string, {}, {})
+      out = subject.convert_assessment(qti_string, '/')
 
-      expect(result[:title]).to eql("All Questions")
-      expect(result[:ident]).to eql("i68e7925af6a9e291012ad7e532e56c0b")
-      expect(result[:items].size).to eql 13
+      assessments = subject.assessments
+      items = subject.items
+      widgets = subject.widgets
+      expect(assessments[0][:title]).to eql("All Questions")
+      expect(assessments[0][:reference]).to_not be_nil
+      expect(assessments[0][:data][:items].count).to eql(13)
+      expect(items.size).to eql 13
+      expect(widgets.size).to eql 13
+    end
+  end
+
+  describe "Convert canvas item banks" do
+    it "handles qti strings" do
+      qti_string = File.read(fixture_path("item_bank.qti.xml"))
+
+      out = subject.convert_item_bank(qti_string, '/')
+
+      item_banks = subject.item_banks
+      items = subject.items
+      widgets = subject.widgets
+      expect(item_banks[0][:title]).to eql("My Item Bank")
+      expect(item_banks[0][:ident]).to eql("g434648260ca7918cb978a027019f2c1e")
+      expect(item_banks[0][:item_refs].count).to eql(3)
+      expect(items.size).to eql 3
+      expect(items[0][:tags]).to eql({ "Item Bank" => ["My Item Bank"] })
+    end
+  end
+
+  describe "generate_learnosity_export" do
+    let(:output_path) { Tempfile.new(['export', '.zip']) }
+
+    def count_files(out, prefix)
+      out.select { |entry| entry.name.start_with?(prefix) }.count
+    end
+
+    it "Converts imscc export package with no errors" do
+      result = subject.generate_learnosity_export(fixture_path("imscc.zip"), output_path)
+
+      expect(result[:errors]).to eql({})
+      expect(File.exist?(output_path)).to be_truthy
+
+      Zip::File.open(output_path) do |out|
+        expect(out.find_entry("export.json")).to be_truthy
+        expect(count_files(out, "activities/")).to eq(1)
+        expect(count_files(out, "items/")).to eq(13)
+        expect(count_files(out, "assets/")).to eq(1)
+      end
+    end
+
+    it "Converts canvas export package with no errors" do
+      result = subject.generate_learnosity_export(fixture_path("canvas.imscc"), output_path)
+
+      expect(result[:errors]).to eql({})
+      expect(File.exist?(output_path)).to be_truthy
+
+      Zip::File.open(output_path) do |out|
+        expect(out.find_entry("export.json")).to be_truthy
+        expect(count_files(out, "activities/")).to eq(3)
+        expect(count_files(out, "items/")).to eq(44)
+        expect(count_files(out, "assets/")).to eq(3)
+      end
+    end
+
+    it "Converts canvas multi-column new quiz with no errors" do
+      result = subject.generate_learnosity_export(fixture_path("canvas_multi.imscc"), output_path)
+
+      expect(result[:errors]).to eql({})
+      expect(File.exist?(output_path)).to be_truthy
+
+      Zip::File.open(output_path) do |out|
+        expect(out.find_entry("export.json")).to be_truthy
+        expect(count_files(out, "activities/")).to eq(1)
+        expect(count_files(out, "items/")).to eq(13)
+        expect(count_files(out, "assets/")).to eq(0)
+      end
+    end
+
+    it "Converts D2L CC export package with no errors" do
+      result = subject.generate_learnosity_export(fixture_path("D2LCCExport.imscc"), output_path)
+
+      expect(result[:errors]).to eql({})
+      expect(File.exist?(output_path)).to be_truthy
+
+      Zip::File.open(output_path) do |out|
+        expect(out.find_entry("export.json")).to be_truthy
+        expect(count_files(out, "activities/")).to eq(1)
+        expect(count_files(out, "items/")).to eq(4)
+        expect(count_files(out, "assets/")).to eq(2)
+      end
     end
   end
 
   describe "Imscc Export" do
-    it "Converts imscc export package of quizzes" do
-      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("imscc.zip"))
+    it "Converts imscc export package with no errors" do
+      result = subject.convert_imscc_export(fixture_path("imscc.zip"))
 
-      expect(result[:assessments].size).to eql(1)
-      expect(result[:assessments].first[:title]).to eql("All Questions")
+      expect(result[:errors]).to eql({})
+    end
+
+    it "Converts imscc export package of quizzes" do
+      result = subject.convert_imscc_export(fixture_path("imscc.zip"))
+
+      expect(subject.assessments.size).to eql(1)
+      expect(subject.assessments[0][:title]).to eql("All Questions")
+    end
+
+    it "Converts a Canvas course export package with no errors" do
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(result[:errors]).to eql({})
     end
 
     it "Converts a Canvas course export package" do
-      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("canvas.imscc"))
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
 
-      expect(result[:assessments].size).to eql(2)
-      expect(result[:assessments][0][:title]).to eql("All Questions")
-      expect(result[:assessments][0][:items].count).to eql(13)
+      expect(subject.assessments.size).to eql(3)
+      expect(subject.assessments[0][:title]).to eql("All Questions")
+      expect(subject.assessments[0][:data][:items].count).to eql(13)
     end
 
     it "Converts Canvas new quizzes" do
-      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("canvas.imscc"))
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
 
-      expect(result[:assessments].size).to eql(2)
-      expect(result[:assessments][1][:title]).to eql("All Questions New Quizzes")
-      expect(result[:assessments][1][:items].count).to eql(13)
+      expect(subject.assessments.size).to eql(3)
+      expect(subject.assessments[1][:title]).to eql("All Questions New Quizzes")
+      expect(subject.assessments[1][:data][:items].count).to eql(16)
+    end
+
+    it "Converts Canvas new quizzes that use item banks" do
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(subject.assessments.size).to eql(3)
+      expect(subject.assessments[2][:title]).to eql("Questions from item bank")
+      expect(subject.assessments[2][:data][:items].count).to eql(4)
+    end
+
+    it "Converts Canvas multi-column new quizzes" do
+      # TODO: add support for multi-column quizzes
+      result = subject.convert_imscc_export(fixture_path("canvas_multi.imscc"))
+
+      expect(subject.assessments.size).to eql(1)
+      expect(subject.assessments[0][:title]).to eql("Multi-column quiz")
+      expect(subject.assessments[0][:data][:items].count).to eql(13)
+    end
+
+    it "Converts Canvas new quizzes item banks" do
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(subject.item_banks.size).to eql(3)
+      expect(subject.item_banks[0][:title]).to eql("All Questions")
+      expect(subject.item_banks[0][:item_refs].count).to eql(13)
+      expect(subject.item_banks[1][:title]).to eql("My Item Bank")
+      expect(subject.item_banks[1][:item_refs].count).to eql(3)
+      expect(subject.item_banks[2][:title]).to eql("My Item Bank 2")
+      expect(subject.item_banks[2][:item_refs].count).to eql(1)
+    end
+
+    it "Converts all items" do
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(subject.items.size).to eql(44)
+    end
+
+    it "Converts all assets" do
+      result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
+
+      expect(subject.assets.values.select(&:present?).size).to eql(3)
+      expect(subject.assets.keys).to include(
+        "/assessment_questions/IMG_2523.JPG",
+        "/Quiz Files/imscc_11763/IMG_2523.JPG",
+      )
     end
 
     it "Converts a D2L CC export package" do
-      result = CanvasQtiToLearnosityConverter.convert_imscc_export(fixture_path("D2LCCExport.imscc"))
+      result = subject.convert_imscc_export(fixture_path("D2LCCExport.imscc"))
 
-      expect(result[:assessments].size).to eql(1)
-      expect(result[:assessments][0][:title]).to eql("Quiz1")
-      expect(result[:assessments][0][:items].count).to eql(4)
+      expect(subject.assessments.size).to eql(1)
+      expect(subject.assessments[0][:title]).to eql("Quiz1")
+      expect(subject.assessments[0][:data][:items].count).to eql(4)
     end
   end
-
 end
