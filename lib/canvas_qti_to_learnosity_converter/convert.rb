@@ -19,9 +19,11 @@ require "canvas_qti_to_learnosity_converter/questions/file_upload"
 require "canvas_qti_to_learnosity_converter/questions/text_only"
 require "canvas_qti_to_learnosity_converter/questions/numerical"
 require "canvas_qti_to_learnosity_converter/questions/calculated"
+require "canvas_qti_to_learnosity_converter/new_quizzes_support"
 
 module CanvasQtiToLearnosityConverter
   class Converter
+    include CanvasQtiToLearnosityConverter::NewQuizzesSupport
     FEATURE_TYPES = [ :text_only_question ]
     QUESTION_TYPES = [
       :multiple_choice_question,
@@ -194,9 +196,27 @@ module CanvasQtiToLearnosityConverter
 
     def convert_items(qti, path, meta: {}, tags: {})
       converted_item_refs = []
+
+      items_by_parent_stimulus = {}
+      qti.css("item,bankentry_item,section").each do |item|
+        ident = item.attribute("ident")&.value
+        next if ident == "root_section"
+
+        parent_ident = parent_stimulus_ident(item)
+        if parent_ident.present?
+          items_by_parent_stimulus[parent_ident] ||= []
+          items_by_parent_stimulus[parent_ident].push(item)
+        end
+      end
+
       qti.css("item,bankentry_item,section").each.with_index do |item, index|
         begin
+          # Skip items that have a parent, as we'll convert them when we convert the parent
+          next if parent_stimulus_ident(item).present?
+
           ident = item.attribute("ident")&.value
+          item_ref = item.attribute("item_ref")&.value
+
           if item.name == "section"
             next if ident == "root_section"
 
@@ -204,32 +224,31 @@ module CanvasQtiToLearnosityConverter
               item_refs = @items.select { |i| i.dig(:metadata, :original_item_bank_ref) == sourcebank_ref.text }.map { |i| i[:reference] }
               converted_item_refs += item_refs
             end
-          elsif item.name == "bankentry_item"
-            item_ref = item.attribute("item_ref")&.value
-            if item_ref
-              converted_item_refs.push(build_reference(item_ref))
-            end
+          elsif item.name == "bankentry_item" && item_ref.present? && items_by_parent_stimulus[item_ref].present?
+            new_item = clone_bank_item(item, items_by_parent_stimulus[item_ref], path)
+            converted_item_refs.push(new_item[:reference])
+          elsif item.name == "bankentry_item" && item_ref.present?
+            converted_item_refs.push(build_reference(item_ref))
           elsif item.name == "item"
             reference = build_reference(ident)
             item_title = item.attribute("title")&.value || ''
             learnosity_type, quiz_item = convert_item(qti_string: item.to_html)
 
-            item_widgets = [
-              {
-                type: learnosity_type,
-                data: quiz_item.convert(@assets, path),
-                reference: build_reference,
-              }
-            ]
+            item_widgets, definition = build_item_definition(
+              item,
+              learnosity_type,
+              quiz_item,
+              path,
+              items_by_parent_stimulus.fetch(ident, [])
+            )
+
             @widgets += item_widgets
 
             @items << {
               title: item_title,
               reference:,
               metadata: meta.merge({ original_item_ref: ident }),
-              definition: {
-                widgets: item_widgets.map{ |w| { reference: w[:reference] } },
-              },
+              definition:,
               questions: item_widgets.select{ |w| w[:type] == "question" }.map{ |w| w[:reference] },
               features: item_widgets.select{ |w| w[:type] == "feature" }.map{ |w| w[:reference] },
               status: "published",
@@ -250,8 +269,8 @@ module CanvasQtiToLearnosityConverter
             message: e.message,
           })
         rescue StandardError => e
-          @errors[ident] ||= []
-          @errors[ident].push({
+          @errors[ident || item_ref] ||= []
+          @errors[ident || item_ref].push({
             index: index,
             error_type: e.class.to_s,
             message: e.message,
