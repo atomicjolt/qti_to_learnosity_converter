@@ -343,6 +343,44 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(items.size).to eql 13
       expect(widgets.size).to eql 13
     end
+
+    describe "with stimulus questions" do
+      it "handles a left orientated stimulus question" do
+        qti_string = File.read("spec/fixtures/left_stimulus_with_questions.qti.xml")
+        subject.convert_assessment(qti_string, '/')
+
+        assessments = subject.assessments
+        items = subject.items
+        widgets = subject.widgets
+
+        expect(assessments.size).to eql 1
+        expect(items.size).to eql 1
+        expect(widgets.size).to eql 3
+
+        item = items[0]
+        expect(item[:definition][:regions].size).to eql 2
+        expect(item[:definition][:regions][0][:widgets].size).to eql 1
+        expect(item[:definition][:regions][0][:widgets][0][:reference]).to be_present
+        expect(item[:definition][:regions][0][:width]).to eql 50
+        expect(item[:definition][:regions][1][:widgets].size).to eql 2
+      end
+
+      it "handles a top orientated stimulus question" do
+        qti_string = File.read("spec/fixtures/top_stimulus_with_questions.qti.xml")
+        subject.convert_assessment(qti_string, '/')
+
+        assessments = subject.assessments
+        items = subject.items
+        widgets = subject.widgets
+
+        expect(assessments.size).to eql 1
+        expect(items.size).to eql 1
+        expect(widgets.size).to eql 3
+
+        item = items[0]
+        expect(item[:definition][:widgets].size).to eql 3
+      end
+    end
   end
 
   describe "Convert canvas item banks" do
@@ -392,7 +430,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       Zip::File.open(output_path) do |out|
         expect(out.find_entry("export.json")).to be_truthy
         expect(count_files(out, "activities/")).to eq(3)
-        expect(count_files(out, "items/")).to eq(44)
+        expect(count_files(out, "items/")).to eq(43)
         expect(count_files(out, "assets/")).to eq(3)
       end
     end
@@ -406,7 +444,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       Zip::File.open(output_path) do |out|
         expect(out.find_entry("export.json")).to be_truthy
         expect(count_files(out, "activities/")).to eq(1)
-        expect(count_files(out, "items/")).to eq(13)
+        expect(count_files(out, "items/")).to eq(10)
         expect(count_files(out, "assets/")).to eq(0)
       end
     end
@@ -459,7 +497,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(subject.assessments.size).to eql(3)
       expect(subject.assessments[1][:title]).to eql("All Questions New Quizzes")
-      expect(subject.assessments[1][:data][:items].count).to eql(16)
+      expect(subject.assessments[1][:data][:items].count).to eql(15)
     end
 
     it "Converts Canvas new quizzes that use item banks" do
@@ -474,9 +512,12 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       # TODO: add support for multi-column quizzes
       result = subject.convert_imscc_export(fixture_path("canvas_multi.imscc"))
 
+      expect(subject.errors).to eql({})
       expect(subject.assessments.size).to eql(1)
       expect(subject.assessments[0][:title]).to eql("Multi-column quiz")
-      expect(subject.assessments[0][:data][:items].count).to eql(13)
+      expect(subject.assessments[0][:data][:items].count).to eql(5)
+      expect(subject.items.count).to eql(10)
+      expect(subject.widgets.count).to eql(20)
     end
 
     it "Converts Canvas new quizzes item banks" do
@@ -494,7 +535,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     it "Converts all items" do
       result = subject.convert_imscc_export(fixture_path("canvas.imscc"))
 
-      expect(subject.items.size).to eql(44)
+      expect(subject.items.size).to eql(43)
     end
 
     it "Converts all assets" do
