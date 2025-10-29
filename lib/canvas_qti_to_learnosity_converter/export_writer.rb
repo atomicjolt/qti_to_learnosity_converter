@@ -1,6 +1,6 @@
 class ExportWriter
   def initialize(temp_file)
-    @zip = Zip::File.open(temp_file.path, Zip::File::CREATE)
+    @zip = Zip::File.open(temp_file.path, create: true)
   end
 
   def close
