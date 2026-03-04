@@ -328,6 +328,116 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Ordering" do
+    it "handles a basic ordering question" do
+      qti_file = File.new("spec/fixtures/ordering.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "orderlist"
+      expect(learnosity[:stimulus]).to include "<p>Preference?</p>"
+      expect(learnosity[:list].size).to eq 3
+      expect(learnosity[:validation]).to eq({
+        "valid_response" => {
+          "score" => 1.0,
+          "value" => [2, 0, 1]
+        }
+      })
+    end
+  end
+
+  describe "Hot Spot" do
+    it "handles a basic hot spot question" do
+      qti_file = File.new("spec/fixtures/hotspot.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "hotspot"
+      expect(learnosity[:stimulus]).to include "<p>This spot is hot</p>"
+
+      expect(learnosity[:image]).to eq({ source: "$IMS-CC-FILEBASE$/Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" })
+
+      expect(learnosity[:areas].length).to eq 1
+      # Rectangle coords (0-1 fractions) converted to 4 polygon points (0-100 percentages)
+      expect(learnosity[:areas][0]).to eq [
+        { "x" => 35.346097201767307, "y" => 14.138438880706922 },
+        { "x" => 67.59941089837997,  "y" => 14.138438880706922 },
+        { "x" => 67.59941089837997,  "y" => 40.942562592047127 },
+        { "x" => 35.346097201767307, "y" => 40.942562592047127 },
+      ]
+
+      expect(learnosity[:area_attributes]).to eq({
+        "global" => {
+          "fill" => "rgba(255,255,255,0)",
+          "stroke" => "rgba(15,61,109,0.8)"
+        },
+        "individual" => [
+          { "area" => "0", "label" => "1" }
+        ]
+      })
+
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 1.0,
+          "value" => ["0"],
+        }
+      })
+    end
+
+    it "processes hotspot image as an asset" do
+      qti_file = File.new("spec/fixtures/hotspot.qti.xml")
+      qti = qti_file.read
+      _, question = subject.convert_item(qti_string: qti)
+
+      assets = {}
+      learnosity = question.to_learnosity
+      question.add_learnosity_assets(assets, '', learnosity)
+
+      expect(assets).to match({
+        "Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" => be_a(String)
+      })
+      expect(learnosity[:image][:source]).to start_with("___EXPORT_ROOT___/assets/")
+    end
+  end
+
+  describe "Categorization" do
+    it "handles a basic categorization question" do
+      qti_file = File.new("spec/fixtures/categorization.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "classification"
+      expect(learnosity[:stimulus]).to include "<p>Blah</p>"
+
+      expect(learnosity[:possible_responses]).to eq ["blah blah", "blah blah blah"]
+
+      expect(learnosity[:ui_style]).to eq({
+        "column_count" => 2,
+        "column_titles" => ["cat 2 desc", "cat 1 desc"],
+      })
+
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 1.0,
+          # column 0 (cat 2 / a03061ec): item b9ca0088 (index 1)
+          # column 1 (cat 1 / a08633c0): item 20502d90 (index 0)
+          "value" => [[1], [0]],
+        }
+      })
+    end
+  end
+
   describe "Convert canvas quiz items" do
     it "handles qti strings" do
       qti_string = File.read(fixture_path("all_question_types.qti.xml"))

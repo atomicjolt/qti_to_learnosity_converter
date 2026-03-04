@@ -19,20 +19,63 @@ module CanvasQtiToLearnosityConverter
 
     def extract_validation()
       resp_conditions = @xml.css("item > resprocessing > respcondition")
-      correct_condition = resp_conditions.select do |condition|
-        setvar = condition.css("setvar")
-        setvar.length === 1 && setvar.text === "100"
-      end.first
-
-      # TODO check for more than 1 element
-      correct_value = correct_condition.css("varequal").text
-      {
-        "scoring_type" => "exactMatch",
-        "valid_response" => {
-          "value" => [correct_value],
-          "score" => extract_points_possible,
-        },
-      }
+      
+      # Extract all conditions that award points
+      scored_conditions = resp_conditions.filter_map do |condition|
+        setvar = condition.css("setvar").first
+        next unless setvar
+        
+        score = setvar.text.to_f
+        next if score <= 0
+        
+        answer_value = condition.css("varequal").text
+        next if answer_value.empty?
+        
+        {
+          value: answer_value,
+          score: score
+        }
+      end.sort_by { |c| -c[:score] } # Sort by score descending
+      
+      return nil if scored_conditions.empty?
+      
+      # Get the highest scoring answer
+      best_answer = scored_conditions.first
+      points_possible = extract_points_possible
+      
+      # Helper method to scale score to points_possible
+      scale_score = ->(score) { [score, points_possible].min }
+      
+      # If there's only one scoring option, use exactMatch
+      if scored_conditions.length == 1
+        {
+          "scoring_type" => "exactMatch",
+          "valid_response" => {
+            "value" => [best_answer[:value]],
+            "score" => scale_score.call(best_answer[:score]),
+          },
+        }
+      else
+        # Multiple scoring options, use partialMatch
+        validation = {
+          "scoring_type" => "partialMatch",
+          "valid_response" => {
+            "value" => [best_answer[:value]],
+            "score" => scale_score.call(best_answer[:score]),
+          },
+        }
+        
+        # Add alternative responses with lower scores
+        alt_responses = scored_conditions[1..].map do |condition|
+          {
+            "value" => [condition[:value]],
+            "score" => scale_score.call(condition[:score]),
+          }
+        end
+        
+        validation["alt_responses"] = alt_responses if alt_responses.any?
+        validation
+      end
     end
 
     def to_learnosity

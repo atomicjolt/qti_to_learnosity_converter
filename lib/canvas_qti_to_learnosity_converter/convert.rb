@@ -19,6 +19,9 @@ require "canvas_qti_to_learnosity_converter/questions/file_upload"
 require "canvas_qti_to_learnosity_converter/questions/text_only"
 require "canvas_qti_to_learnosity_converter/questions/numerical"
 require "canvas_qti_to_learnosity_converter/questions/calculated"
+require "canvas_qti_to_learnosity_converter/questions/ordering"
+require "canvas_qti_to_learnosity_converter/questions/hotspot"
+require "canvas_qti_to_learnosity_converter/questions/categorization"
 
 module CanvasQtiToLearnosityConverter
   class Converter
@@ -33,7 +36,15 @@ module CanvasQtiToLearnosityConverter
       :matching_question,
       :essay_question,
       :file_upload_question,
+      :ordering_question,
+      :hot_spot_question,
+      :categorization_question,
     ]
+
+    # TODO:
+
+    # Take a look at File upload and audio files too
+
 
     TYPE_MAP = {
       multiple_choice_question: MultipleChoiceQuestion,
@@ -45,6 +56,9 @@ module CanvasQtiToLearnosityConverter
       matching_question: MatchingQuestion,
       essay_question: EssayQuestion,
       file_upload_question: FileUploadQuestion,
+      ordering_question: OrderingQuestion,
+      hot_spot_question: HotSpotQuestion,
+      categorization_question: CategorizationQuestion,
       text_only_question: TextOnlyQuestion,
       numerical_question: NumericalQuestion,
       calculated_question: CalculatedQuestion,
@@ -511,6 +525,7 @@ module CanvasQtiToLearnosityConverter
       end
     end
 
+    # NOTE: This is what AA is calling
     def generate_learnosity_export(input_path, output_path)
       result = convert_imscc_export(input_path)
 

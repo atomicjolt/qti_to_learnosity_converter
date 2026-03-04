@@ -23,23 +23,24 @@ module CanvasQtiToLearnosityConverter
     def extract_validation()
       template = get_template()
 
+      
       responses = extract_template_values(template).map do |name|
         result = @xml.css(%{item > presentation >
-          response_lid[ident="response_#{name}"] > render_choice material >
-          mattext}).map do |node|
+        response_lid[ident="response_#{name}"] > render_choice material >
+        mattext}).map do |node|
           extract_mattext(node)
         end
-
+        
         if result.empty?
           nil
         else
           result
         end
       end.compact
-
+      
       all_responses = []
       create_responses(responses, 0, all_responses, [])
-
+      
       {
         "scoring_type" => "partialMatchV2",
         "rounding" => "none",
