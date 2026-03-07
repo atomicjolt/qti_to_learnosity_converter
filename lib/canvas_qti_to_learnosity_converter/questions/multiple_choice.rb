@@ -111,10 +111,12 @@ module CanvasQtiToLearnosityConverter
 
   class MultipleAnswersQuestion < MultipleChoiceQuestion
     def to_learnosity
+      shuffle = @xml.css("item > presentation > response_lid > render_choice").first&.attribute("shuffle")&.value
       {
         stimulus: extract_stimulus(),
         options: extract_options(),
         multiple_responses: true,
+        shuffle_options: shuffle == "Yes",
         response_id: extract_response_id(),
         type: "mcq",
         validation: extract_validation()
