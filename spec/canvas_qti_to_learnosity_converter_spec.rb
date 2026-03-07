@@ -667,6 +667,51 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         }
       })
     end
+
+    it "sets shuffle_options false when ims_render_object has shuffle=No" do
+      qti_file = File.new("spec/fixtures/ordering.qti.xml")
+      _, question = subject.convert_item(qti_string: qti_file.read)
+      expect(question.to_learnosity[:shuffle_options]).to eq false
+    end
+
+    it "sets shuffle_options true when ims_render_object has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>ordering_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>original_answer_ids</fieldlabel><fieldentry>a,b</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Order these</mattext></material>
+            <response_lid ident="response1" rcardinality="Ordered">
+              <render_extension>
+                <ims_render_object shuffle="Yes">
+                  <flow_label>
+                    <response_label ident="a"><material><mattext texttype="text/html">A</mattext></material></response_label>
+                    <response_label ident="b"><material><mattext texttype="text/html">B</mattext></material></response_label>
+                  </flow_label>
+                </ims_render_object>
+              </render_extension>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar defaultval="1" varname="ORDERSCORE" vartype="Integer"/></outcomes>
+            <respcondition continue="No">
+              <conditionvar>
+                <varequal respident="response1">a</varequal>
+                <varequal respident="response1">b</varequal>
+              </conditionvar>
+              <setvar action="Set" varname="SCORE">100</setvar>
+            </respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
+    end
   end
 
   describe "Hot Spot" do

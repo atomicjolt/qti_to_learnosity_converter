@@ -3,10 +3,12 @@ require "canvas_qti_to_learnosity_converter/questions/question"
 module CanvasQtiToLearnosityConverter
     class OrderingQuestion < QuizQuestion
         def to_learnosity
+            shuffle = @xml.css("ims_render_object").first&.attribute("shuffle")&.value
             {
                 type: "orderlist",
                 stimulus: extract_stimulus(),
-                list: extract_items(), 
+                list: extract_items(),
+                shuffle_options: shuffle == "Yes",
                 validation: extract_validation(),
             }
         end
