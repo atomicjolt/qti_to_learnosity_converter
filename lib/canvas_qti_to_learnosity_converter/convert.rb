@@ -41,11 +41,6 @@ module CanvasQtiToLearnosityConverter
       :categorization_question,
     ]
 
-    # TODO:
-
-    # Take a look at File upload and audio files too
-
-
     TYPE_MAP = {
       multiple_choice_question: MultipleChoiceQuestion,
       true_false_question: MultipleChoiceQuestion,
@@ -316,7 +311,7 @@ module CanvasQtiToLearnosityConverter
 
       if question_class
         question = if question_class.respond_to?(:for)
-          question_class.for(xml)
+          question_class.for(xml) # Some question types have subtypes that require different handling (FillInTheBlank can have drop-downs or word-banks), so they implement a .for method to return the correct class
         else
           question_class.new(xml)
         end
@@ -529,7 +524,6 @@ module CanvasQtiToLearnosityConverter
       end
     end
 
-    # NOTE: This is what AA is calling
     def generate_learnosity_export(input_path, output_path)
       result = convert_imscc_export(input_path)
 
