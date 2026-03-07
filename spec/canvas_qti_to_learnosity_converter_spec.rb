@@ -299,6 +299,35 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       ])
 
       expect(learnosity[:duplicate_responses]).to eq(true)
+      expect(learnosity[:shuffle_options]).to eq false
+    end
+
+    it "sets shuffle_options true when render_choice has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>matching_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Match these</mattext></material>
+            <response_lid ident="response_1">
+              <material><mattext texttype="text/plain">Left 1</mattext></material>
+              <render_choice shuffle="Yes">
+                <response_label ident="1"><material><mattext>Right 1</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition><conditionvar><varequal respident="response_1">1</varequal></conditionvar><setvar action="Add" varname="SCORE">100.00</setvar></respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
     end
   end
 
