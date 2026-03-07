@@ -315,7 +315,11 @@ module CanvasQtiToLearnosityConverter
       question_class = TYPE_MAP[type]
 
       if question_class
-        question = question_class.new(xml)
+        question = if question_class.respond_to?(:for)
+          question_class.for(xml)
+        else
+          question_class.new(xml)
+        end
       else
         raise CanvasQuestionTypeNotSupportedError.new(type)
       end
@@ -458,7 +462,7 @@ module CanvasQtiToLearnosityConverter
           @errors[ident || item_ref] ||= []
           @errors[ident || item_ref].push({
             index: index,
-            error_type: e.class.to_s,
+            error_type: e.class.name.split("::").last,
             message: e.message,
           })
         end

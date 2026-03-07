@@ -10,6 +10,7 @@ module CanvasQtiToLearnosityConverter
                 stimulus: extract_stimulus(),
                 areas: areas,
                 area_attributes: area_attributes,
+                multiple_responses: true, 
                 validation: extract_validation(areas.length),
             }
 
@@ -39,16 +40,20 @@ module CanvasQtiToLearnosityConverter
 
             case rarea
             when "ellipse"
-                cx, cy, rx, ry = coords
+                x1, y1, x2, y2 = coords
+                cx = ((x1 + x2) / 2.0) * 100
+                cy = ((y1 + y2) / 2.0) * 100
+                rx = ((x2 - x1).abs / 2.0) * 100
+                ry = ((y2 - y1).abs / 2.0) * 100
                 num_points = 12
                 (0...num_points).map do |i|
                     angle = 2 * Math::PI * i / num_points
                     {
-                        "x" => (cx + rx * Math.cos(angle)) * 100,
-                        "y" => (cy + ry * Math.sin(angle)) * 100,
+                        "x" => cx + rx * Math.cos(angle),
+                        "y" => cy + ry * Math.sin(angle),
                     }
                 end
-            when "polygon"
+            when "polygon", "bounded"
                 coords.each_slice(2).map do |x, y|
                     { "x" => x * 100, "y" => y * 100 }
                 end
@@ -88,6 +93,22 @@ module CanvasQtiToLearnosityConverter
             }
 
             [areas, area_attributes]
+        end
+
+        def extract_multiple_responses() # CHECK THIS
+            resp_conditions = @xml.css("item > resprocessing > respcondition")
+            scored_conditions = resp_conditions.filter_map do |condition|
+                setvar = condition.css("setvar").first
+                next unless setvar
+                score = setvar.text.to_f
+                next if score <= 0
+                varequal = condition.css("varequal").first
+                next unless varequal
+                value = varequal.text.strip
+                next if value.empty?
+                value
+            end
+            scored_conditions.uniq.length > 1
         end
 
         def extract_validation(area_count)
