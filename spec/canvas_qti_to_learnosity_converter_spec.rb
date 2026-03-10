@@ -795,7 +795,7 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       question.add_learnosity_assets(assets, '', learnosity)
 
       expect(assets).to match({
-        "Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" => be_a(String)
+        "/Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" => be_a(String)
       })
       expect(learnosity[:image][:source]).to start_with("___EXPORT_ROOT___/assets/")
     end

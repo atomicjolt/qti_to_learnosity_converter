@@ -138,7 +138,7 @@ module CanvasQtiToLearnosityConverter
       end
 
       asset_path = asset_path.split("?").first.gsub(/^\//, '')
-      asset_path = File.join(img_path, asset_path).gsub(/^\//, '')
+      asset_path = File.join(img_path, asset_path)
       clean_ext = File.extname(asset_path).gsub(/[^a-z0-9_.-]/i, '')
       assets[asset_path] ||= "#{SecureRandom.uuid}#{clean_ext}"
       image_hash[:source] = "___EXPORT_ROOT___/assets/#{assets[asset_path]}"

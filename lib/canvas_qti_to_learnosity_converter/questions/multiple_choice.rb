@@ -44,7 +44,7 @@ module CanvasQtiToLearnosityConverter
       points_possible = extract_points_possible
       
       # Helper method to scale score to points_possible
-      scale_score = ->(score) { [score, points_possible].min }
+      scale_score = ->(score) { points_possible * (score / 100.0) }
       
       # If there's only one scoring option, use exactMatch
       if scored_conditions.length == 1
