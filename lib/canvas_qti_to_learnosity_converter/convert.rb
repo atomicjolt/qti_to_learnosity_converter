@@ -310,11 +310,7 @@ module CanvasQtiToLearnosityConverter
       question_class = TYPE_MAP[type]
 
       if question_class
-        question = if question_class.respond_to?(:for)
-          question_class.for(xml) # Some question types have subtypes that require different handling (FillInTheBlank can have drop-downs or word-banks), so they implement a .for method to return the correct class
-        else
-          question_class.new(xml)
-        end
+        question = question_class.for(xml)
       else
         raise CanvasQuestionTypeNotSupportedError.new(type)
       end

@@ -5,6 +5,10 @@ module CanvasQtiToLearnosityConverter
     extend Forwardable
     def_delegators :@xml, :css
 
+    def self.for(xml)
+      new(xml)
+    end
+
     def initialize(xml)
       @xml = xml
     end
