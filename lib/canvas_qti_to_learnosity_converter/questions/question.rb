@@ -5,6 +5,10 @@ module CanvasQtiToLearnosityConverter
     extend Forwardable
     def_delegators :@xml, :css
 
+    def self.for(xml)
+      new(xml)
+    end
+
     def initialize(xml)
       @xml = xml
     end
@@ -52,6 +56,31 @@ module CanvasQtiToLearnosityConverter
           node["src"] = "___EXPORT_ROOT___/assets/#{assets[asset_path]}"
           changed = true
         end
+      end
+      doc.css("audio").each do |node|
+        source_node = node.css("source").first
+        raw_src = source_node&.[]("src") || node["src"]
+        next unless raw_src
+
+        src = URI::DEFAULT_PARSER.unescape(raw_src)
+        if /^\$IMS-CC-FILEBASE\$(.*)/.match(src) || /^((?!https?:).*)/.match(src)
+          asset_path_base = src.start_with?("$IMS-CC-FILEBASE$") ? '' : path
+          asset_path = $1.split("?").first.gsub(/^\//, '')
+          asset_path = File.join(asset_path_base, asset_path)
+          clean_ext = File.extname(asset_path).gsub(/[^a-z0-9_.-]/i, '')
+          assets[asset_path] ||= "#{SecureRandom.uuid}#{clean_ext}"
+          src = "___EXPORT_ROOT___/assets/#{assets[asset_path]}"
+        end
+
+        span = Nokogiri::XML::Node.new("span", doc)
+        span["class"] = "learnosity-feature"
+        span["data-player"] = "bar"
+        span["data-simplefeature_id"] = SecureRandom.uuid
+        span["data-src"] = src
+        span["data-type"] = "audioplayer"
+        span.add_child(Nokogiri::XML::Text.new("", doc))
+        node.replace(span)
+        changed = true
       end
       text.replace(doc.to_xml) if changed
     end

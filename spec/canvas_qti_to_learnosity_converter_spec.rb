@@ -35,6 +35,66 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         }
       })
     end
+
+    it "sets shuffle_options true when render_choice has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice shuffle="Yes">
+                <response_label ident="a"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">a</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
+    end
+
+    it "sets shuffle_options false when render_choice has shuffle=No" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice shuffle="No">
+                <response_label ident="a"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">a</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq false
+    end
+
+    it "sets shuffle_options false when render_choice has no shuffle attribute" do
+      qti_file = File.new("spec/fixtures/multiple_choice.qti.xml")
+      _, question = subject.convert_item(qti_string: qti_file.read)
+      expect(question.to_learnosity[:shuffle_options]).to eq false
+    end
   end
 
   describe "assets" do
@@ -50,6 +110,72 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         "/Uploaded Media/apple-2.jpeg" => end_with('.jpeg'),
       })
     end
+    it "transforms audio with a local asset src into a learnosity audioplayer span" do
+      qti = <<~XML
+        <questestinterop>
+          <item ident="iaudio" title="Audio Passage">
+            <itemmetadata>
+              <qtimetadata>
+                <qtimetadatafield>
+                  <fieldlabel>question_type</fieldlabel>
+                  <fieldentry>text_only_question</fieldentry>
+                </qtimetadatafield>
+              </qtimetadata>
+            </itemmetadata>
+            <presentation>
+              <material>
+                <mattext texttype="text/html">&lt;audio&gt;&lt;source src="$IMS-CC-FILEBASE$/Uploaded%20Media/audio-file.mp3"/&gt;&lt;/audio&gt;</mattext>
+              </material>
+            </presentation>
+          </item>
+        </questestinterop>
+      XML
+
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+      learnosity = question.to_learnosity
+      question.add_learnosity_assets(assets, '', learnosity)
+
+      expect(assets).to match({
+        "/Uploaded Media/audio-file.mp3" => end_with('.mp3')
+      })
+      expect(learnosity[:content]).to include('class="learnosity-feature"')
+      expect(learnosity[:content]).to include('data-type="audioplayer"')
+      expect(learnosity[:content]).to include("___EXPORT_ROOT___/assets/")
+    end
+
+    it "transforms audio with an https src into a learnosity audioplayer span without asset processing" do
+      qti = <<~XML
+        <questestinterop>
+          <item ident="iaudio" title="Audio Passage">
+            <itemmetadata>
+              <qtimetadata>
+                <qtimetadatafield>
+                  <fieldlabel>question_type</fieldlabel>
+                  <fieldentry>text_only_question</fieldentry>
+                </qtimetadatafield>
+              </qtimetadata>
+            </itemmetadata>
+            <presentation>
+              <material>
+                <mattext texttype="text/html">&lt;audio&gt;&lt;source src="https://assets.learnosity.com/organisations/377/audio.mp3"/&gt;&lt;/audio&gt;</mattext>
+              </material>
+            </presentation>
+          </item>
+        </questestinterop>
+      XML
+
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+      learnosity = question.to_learnosity
+      question.add_learnosity_assets(assets, '', learnosity)
+
+      expect(assets).to be_empty
+      expect(learnosity[:content]).to include('class="learnosity-feature"')
+      expect(learnosity[:content]).to include('data-type="audioplayer"')
+      expect(learnosity[:content]).to include('data-src="https://assets.learnosity.com/organisations/377/audio.mp3"')
+    end
+
     it "detects newer style assets" do
       qti_file = File.new("spec/fixtures/assets_new_style.qti.xml")
       qti = qti_file.read
@@ -119,6 +245,33 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(learnosity[:multiple_responses]).to eq true
     end
+
+    it "sets shuffle_options true when render_choice has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_answers_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Multiple">
+              <render_choice shuffle="Yes">
+                <response_label ident="a"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><and><varequal respident="response1">a</varequal></and></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
+    end
   end
 
   describe "Matching" do
@@ -146,6 +299,35 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       ])
 
       expect(learnosity[:duplicate_responses]).to eq(true)
+      expect(learnosity[:shuffle_options]).to eq false
+    end
+
+    it "sets shuffle_options true when render_choice has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>matching_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Match these</mattext></material>
+            <response_lid ident="response_1">
+              <material><mattext texttype="text/plain">Left 1</mattext></material>
+              <render_choice shuffle="Yes">
+                <response_label ident="1"><material><mattext>Right 1</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition><conditionvar><varequal respident="response_1">1</varequal></conditionvar><setvar action="Add" varname="SCORE">100.00</setvar></respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
     end
   end
 
@@ -260,6 +442,173 @@ RSpec.describe CanvasQtiToLearnosityConverter do
     end
   end
 
+  describe "Fill The Blanks Question - dropdown" do
+    it "produces clozedropdown when all blanks are dropdowns" do
+      qti = File.read("spec/fixtures/fill_blanks_dropdown.qti.xml")
+      _, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(learnosity[:type]).to eq "clozedropdown"
+      expect(learnosity[:template]).to eq "<p>The {{response}} car is {{response}}</p>"
+      expect(learnosity[:possible_responses]).to eq [["red", "blue"], ["fast", "slow"]]
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
+        "valid_response" => {
+          "value" => ["red", "fast"],
+          "score" => 2.0,
+        }
+      })
+    end
+  end
+
+  describe "Fill The Blanks Question - word bank" do
+    it "produces clozeassociation when all blanks are wordbank" do
+      qti = File.read("spec/fixtures/fill_blanks_wordbank.qti.xml")
+      _, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(learnosity[:type]).to eq "clozeassociation"
+      expect(learnosity[:template]).to eq "<p>The {{response}} car is {{response}}</p>"
+      expect(learnosity[:possible_responses]).to eq ["red", "blue", "fast", "slow"]
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "partialMatchV2",
+        "rounding" => "none",
+        "valid_response" => {
+          "value" => ["red", "fast"],
+          "score" => 2.0,
+        }
+      })
+    end
+  end
+
+  describe "Fill The Blanks Question - mixed types" do
+    it "raises MixedFillBlanksTypeError during convert_item when blanks and dropdowns are mixed" do
+      qti = File.read("spec/fixtures/fill_blanks_mixed.qti.xml")
+
+      expect { subject.convert_item(qti_string: qti) }.to raise_error(
+        CanvasQtiToLearnosityConverter::MixedFillBlanksTypeError,
+        /fill-in-the-blank and dropdown/
+      )
+    end
+
+    it "records an error and skips the item during full assessment conversion" do
+      qti = <<~XML
+        <questestinterop>
+          <assessment ident="test_assessment" title="Test">
+            <section ident="root_section">
+              #{File.read("spec/fixtures/fill_blanks_mixed.qti.xml")}
+            </section>
+          </assessment>
+        </questestinterop>
+      XML
+
+      subject.convert_assessment(qti, "/")
+
+      expect(subject.items).to be_empty
+      expect(subject.errors["ifillblanks_mixed"]).to include(
+        hash_including(error_type: "MixedFillBlanksTypeError")
+      )
+    end
+  end
+
+  describe "Unsupported question type" do
+    it "records an unsupported_question error with the correct type and message" do
+      qti = <<~XML
+        <questestinterop>
+          <assessment ident="test_assessment" title="Test">
+            <section ident="root_section">
+              <item ident="iunknown" title="Unknown Question">
+                <itemmetadata>
+                  <qtimetadata>
+                    <qtimetadatafield>
+                      <fieldlabel>question_type</fieldlabel>
+                      <fieldentry>some_unknown_type</fieldentry>
+                    </qtimetadatafield>
+                  </qtimetadata>
+                </itemmetadata>
+              </item>
+            </section>
+          </assessment>
+        </questestinterop>
+      XML
+
+      subject.convert_assessment(qti, "/")
+
+      expect(subject.errors["iunknown"]).to include(
+        hash_including(
+          error_type: "unsupported_question",
+          message: "Unsupported question type some_unknown_type"
+        )
+      )
+    end
+  end
+
+  describe "Too many questions" do
+    it "records a too_many_questions error when a stimulus exceeds the maximum child question limit" do
+      max = CanvasQtiToLearnosityConverter::Converter::MAX_QUESTIONS_PER_ITEM
+      child_items = (1..(max + 1)).map do |i|
+        <<~XML
+          <item ident="ichild_#{i}" title="Child #{i}">
+            <itemmetadata>
+              <qtimetadata>
+                <qtimetadatafield>
+                  <fieldlabel>question_type</fieldlabel>
+                  <fieldentry>essay_question</fieldentry>
+                </qtimetadatafield>
+                <qtimetadatafield>
+                  <fieldlabel>parent_stimulus_item_ident</fieldlabel>
+                  <fieldentry>istimulus</fieldentry>
+                </qtimetadatafield>
+              </qtimetadata>
+            </itemmetadata>
+            <presentation>
+              <material>
+                <mattext>Essay question #{i}</mattext>
+              </material>
+            </presentation>
+          </item>
+        XML
+      end.join("\n")
+
+      qti = <<~XML
+        <questestinterop>
+          <assessment ident="test_assessment" title="Test">
+            <section ident="root_section">
+              <item ident="istimulus" title="Stimulus">
+                <itemmetadata>
+                  <qtimetadata>
+                    <qtimetadatafield>
+                      <fieldlabel>question_type</fieldlabel>
+                      <fieldentry>text_only_question</fieldentry>
+                    </qtimetadatafield>
+                  </qtimetadata>
+                </itemmetadata>
+                <presentation>
+                  <material orientation="left">
+                    <mattext>Read this passage.</mattext>
+                  </material>
+                </presentation>
+              </item>
+              #{child_items}
+            </section>
+          </assessment>
+        </questestinterop>
+      XML
+
+      subject.convert_assessment(qti, "/")
+
+      expect(subject.errors["istimulus"]).to include(
+        hash_including(
+          error_type: "too_many_questions",
+          message: "Too many questions for item, only the first #{max} will be included"
+        )
+      )
+    end
+  end
+
   describe "Text Only Question" do
     it "handles a basic text only question" do
       qti_file = File.new("spec/fixtures/text_only.qti.xml")
@@ -323,6 +672,161 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         "valid_response" => {
           "score" => 3.0,
           "value" => [[{"method"=>"equivValue", "value"=>"{{var:answer}}\\pm0.23"}]]
+        }
+      })
+    end
+  end
+
+  describe "Ordering" do
+    it "handles a basic ordering question" do
+      qti_file = File.new("spec/fixtures/ordering.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "orderlist"
+      expect(learnosity[:stimulus]).to include "<p>Preference?</p>"
+      expect(learnosity[:list].size).to eq 3
+      expect(learnosity[:validation]).to eq({
+        "valid_response" => {
+          "score" => 1.0,
+          "value" => [2, 0, 1]
+        }
+      })
+    end
+
+    it "sets shuffle_options false when ims_render_object has shuffle=No" do
+      qti_file = File.new("spec/fixtures/ordering.qti.xml")
+      _, question = subject.convert_item(qti_string: qti_file.read)
+      expect(question.to_learnosity[:shuffle_options]).to eq false
+    end
+
+    it "sets shuffle_options true when ims_render_object has shuffle=Yes" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>ordering_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>original_answer_ids</fieldlabel><fieldentry>a,b</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Order these</mattext></material>
+            <response_lid ident="response1" rcardinality="Ordered">
+              <render_extension>
+                <ims_render_object shuffle="Yes">
+                  <flow_label>
+                    <response_label ident="a"><material><mattext texttype="text/html">A</mattext></material></response_label>
+                    <response_label ident="b"><material><mattext texttype="text/html">B</mattext></material></response_label>
+                  </flow_label>
+                </ims_render_object>
+              </render_extension>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar defaultval="1" varname="ORDERSCORE" vartype="Integer"/></outcomes>
+            <respcondition continue="No">
+              <conditionvar>
+                <varequal respident="response1">a</varequal>
+                <varequal respident="response1">b</varequal>
+              </conditionvar>
+              <setvar action="Set" varname="SCORE">100</setvar>
+            </respcondition>
+          </resprocessing>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.to_learnosity[:shuffle_options]).to eq true
+    end
+  end
+
+  describe "Hot Spot" do
+    it "handles a basic hot spot question" do
+      qti_file = File.new("spec/fixtures/hotspot.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "hotspot"
+      expect(learnosity[:stimulus]).to include "<p>This spot is hot</p>"
+
+      expect(learnosity[:image]).to eq({ source: "$IMS-CC-FILEBASE$/Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" })
+
+      expect(learnosity[:areas].length).to eq 1
+      # Rectangle coords (0-1 fractions) converted to 4 polygon points (0-100 percentages)
+      expect(learnosity[:areas][0]).to eq [
+        { "x" => 35.346097201767307, "y" => 14.138438880706922 },
+        { "x" => 67.59941089837997,  "y" => 14.138438880706922 },
+        { "x" => 67.59941089837997,  "y" => 40.942562592047127 },
+        { "x" => 35.346097201767307, "y" => 40.942562592047127 },
+      ]
+
+      expect(learnosity[:area_attributes]).to eq({
+        "global" => {
+          "fill" => "rgba(255,255,255,0)",
+          "stroke" => "rgba(15,61,109,0.8)"
+        },
+        "individual" => [
+          { "area" => "0", "label" => "1" }
+        ]
+      })
+
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 1.0,
+          "value" => ["0"],
+        }
+      })
+    end
+
+    it "processes hotspot image as an asset" do
+      qti_file = File.new("spec/fixtures/hotspot.qti.xml")
+      qti = qti_file.read
+      _, question = subject.convert_item(qti_string: qti)
+
+      assets = {}
+      learnosity = question.to_learnosity
+      question.add_learnosity_assets(assets, '', learnosity)
+
+      expect(assets).to match({
+        "/Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332" => be_a(String)
+      })
+      expect(learnosity[:image][:source]).to start_with("___EXPORT_ROOT___/assets/")
+    end
+  end
+
+  describe "Categorization" do
+    it "handles a basic categorization question" do
+      qti_file = File.new("spec/fixtures/categorization.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "classification"
+      expect(learnosity[:stimulus]).to include "<p>Blah</p>"
+
+      expect(learnosity[:possible_responses]).to eq ["blah blah", "blah blah blah"]
+
+      expect(learnosity[:ui_style]).to eq({
+        "column_count" => 2,
+        "column_titles" => ["cat 2 desc", "cat 1 desc"],
+      })
+
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 1.0,
+          # column 0 (cat 2 / a03061ec): item b9ca0088 (index 1)
+          # column 1 (cat 1 / a08633c0): item 20502d90 (index 0)
+          "value" => [[1], [0]],
         }
       })
     end

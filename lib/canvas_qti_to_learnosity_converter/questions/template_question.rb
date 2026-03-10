@@ -3,11 +3,12 @@ require "canvas_qti_to_learnosity_converter/questions/question"
 module CanvasQtiToLearnosityConverter
   class TemplateQuestion < QuizQuestion
     def extract_template()
-      placeholders = @xml.css("item > presentation > response_lid > material >
-        mattext").map { |text| extract_mattext(text) }
+      placeholders = @xml.css("item > presentation > response_lid").map do |response_lid|
+        ident = response_lid.attribute("ident")&.value
+        ident&.gsub(/^response_/, "")
+      end.compact
 
       template = get_template()
-
       placeholders.each do |placeholder|
         template.sub!("[#{placeholder}]", "{{response}}")
       end

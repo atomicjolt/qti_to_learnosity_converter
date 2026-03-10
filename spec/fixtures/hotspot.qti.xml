@@ -1,0 +1,41 @@
+      <item ident="741cedeedf7c25e1d5b98a1c9588ea81" title="Hot Spot 1">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>hot_spot_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>original_answer_ids</fieldlabel>
+              <fieldentry/>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>assessment_question_identifierref</fieldlabel>
+              <fieldentry>c210acecb3da582abf8ccdc290def23f</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>calculator_type</fieldlabel>
+              <fieldentry>none</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <flow>
+            <response_xy ident="response1" rcardinality="Multiple" rtiming="No">
+              <material>
+                <mattext texttype="text/html">&lt;p&gt;This spot is hot&lt;/p&gt;</mattext>
+              </material>
+              <render_hotspot>
+                <material>
+                  <matimage uri="$IMS-CC-FILEBASE$/Uploaded Media/c99925eb-96d7-400c-bdf0-4ab0c325c332"/>
+                </material>
+                <response_label ident="1" rarea="rectangle">0.35346097201767307,0.14138438880706922,0.6759941089837997,0.40942562592047127</response_label>
+              </render_hotspot>
+            </response_xy>
+          </flow>
+        </presentation>
+      </item>

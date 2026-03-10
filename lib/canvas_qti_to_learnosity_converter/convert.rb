@@ -19,6 +19,9 @@ require "canvas_qti_to_learnosity_converter/questions/file_upload"
 require "canvas_qti_to_learnosity_converter/questions/text_only"
 require "canvas_qti_to_learnosity_converter/questions/numerical"
 require "canvas_qti_to_learnosity_converter/questions/calculated"
+require "canvas_qti_to_learnosity_converter/questions/ordering"
+require "canvas_qti_to_learnosity_converter/questions/hotspot"
+require "canvas_qti_to_learnosity_converter/questions/categorization"
 
 module CanvasQtiToLearnosityConverter
   class Converter
@@ -33,6 +36,9 @@ module CanvasQtiToLearnosityConverter
       :matching_question,
       :essay_question,
       :file_upload_question,
+      :ordering_question,
+      :hot_spot_question,
+      :categorization_question,
     ]
 
     TYPE_MAP = {
@@ -45,6 +51,9 @@ module CanvasQtiToLearnosityConverter
       matching_question: MatchingQuestion,
       essay_question: EssayQuestion,
       file_upload_question: FileUploadQuestion,
+      ordering_question: OrderingQuestion,
+      hot_spot_question: HotSpotQuestion,
+      categorization_question: CategorizationQuestion,
       text_only_question: TextOnlyQuestion,
       numerical_question: NumericalQuestion,
       calculated_question: CalculatedQuestion,
@@ -301,7 +310,7 @@ module CanvasQtiToLearnosityConverter
       question_class = TYPE_MAP[type]
 
       if question_class
-        question = question_class.new(xml)
+        question = question_class.for(xml)
       else
         raise CanvasQuestionTypeNotSupportedError.new(type)
       end
@@ -444,7 +453,7 @@ module CanvasQtiToLearnosityConverter
           @errors[ident || item_ref] ||= []
           @errors[ident || item_ref].push({
             index: index,
-            error_type: e.class.to_s,
+            error_type: e.class.name.split("::").last,
             message: e.message,
           })
         end

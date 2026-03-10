@@ -1,0 +1,67 @@
+      <item ident="bd601a01c307a12919f34ef23f88d5ab" title="Ordering 1">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>ordering_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>original_answer_ids</fieldlabel>
+              <fieldentry>2e9155fd-772c-4e49-ae2a-30e7c0a11bbd,94d5f45e-d9ad-4928-ba2d-7d51b800c48a,d1b58b11-a5b4-4130-adcb-957afbb6b048</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>assessment_question_identifierref</fieldlabel>
+              <fieldentry>9a92f0e7518013b5a25417f946487665</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>calculator_type</fieldlabel>
+              <fieldentry>none</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;p&gt;Preference?&lt;/p&gt;</mattext>
+          </material>
+          <response_lid ident="response1" rcardinality="Ordered">
+            <render_extension>
+              <ims_render_object shuffle="No">
+                <flow_label>
+                  <response_label ident="2e9155fd-772c-4e49-ae2a-30e7c0a11bbd">
+                    <material>
+                      <mattext texttype="text/html">&lt;p&gt;Beets&lt;/p&gt;</mattext>
+                    </material>
+                  </response_label>
+                  <response_label ident="94d5f45e-d9ad-4928-ba2d-7d51b800c48a">
+                    <material>
+                      <mattext texttype="text/html">&lt;p&gt;Battlestar Galactica&lt;/p&gt;</mattext>
+                    </material>
+                  </response_label>
+                  <response_label ident="d1b58b11-a5b4-4130-adcb-957afbb6b048">
+                    <material>
+                      <mattext texttype="text/html">&lt;p&gt;Bears&lt;/p&gt;</mattext>
+                    </material>
+                  </response_label>
+                </flow_label>
+              </ims_render_object>
+            </render_extension>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <outcomes>
+            <decvar defaultval="1" varname="ORDERSCORE" vartype="Integer"/>
+          </outcomes>
+          <respcondition continue="No">
+            <conditionvar>
+              <varequal respident="response1">d1b58b11-a5b4-4130-adcb-957afbb6b048</varequal>
+              <varequal respident="response1">2e9155fd-772c-4e49-ae2a-30e7c0a11bbd</varequal>
+              <varequal respident="response1">94d5f45e-d9ad-4928-ba2d-7d51b800c48a</varequal>
+            </conditionvar>
+            <setvar action="Set" varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>

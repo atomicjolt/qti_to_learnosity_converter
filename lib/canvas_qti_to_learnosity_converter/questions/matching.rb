@@ -3,6 +3,7 @@ require "canvas_qti_to_learnosity_converter/questions/question"
 module CanvasQtiToLearnosityConverter
   class MatchingQuestion < QuizQuestion
     def to_learnosity
+      shuffle = @xml.css("item > presentation > response_lid > render_choice").first&.attribute("shuffle")&.value
       {
         type: "clozedropdown",
         stimulus: extract_stimulus(),
@@ -10,7 +11,7 @@ module CanvasQtiToLearnosityConverter
         validation: extract_validation(),
         possible_responses: extract_responses(),
         duplicate_responses: true,
-        shuffle_options: true,
+        shuffle_options: shuffle == "Yes",
       }
     end
 
