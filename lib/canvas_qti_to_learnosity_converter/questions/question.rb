@@ -24,6 +24,27 @@ module CanvasQtiToLearnosityConverter
         &.first&.next&.text&.to_f || 1.0
     end
 
+    def extract_feedback
+      feedback = {}
+      distractor_rationale = []
+
+      @xml.css("item > itemfeedback").each do |node|
+        ident = node.attribute("ident")&.value
+        text = node.css("flow_mat > material > mattext").first&.content
+        next if text.nil? || text.empty?
+
+        case ident
+        when "correct_fb"           then feedback[:correct_feedback] = text
+        when "general_fb"           then feedback[:general_feedback] = text
+        when "general_incorrect_fb" then feedback[:incorrect_feedback] = text
+        else distractor_rationale << text if ident&.end_with?("_fb")
+        end
+      end
+
+      feedback[:distractor_rationale_response_level] = distractor_rationale unless distractor_rationale.empty?
+      feedback
+    end
+
     def extract_mattext(mattext_node)
       mattext_node.content
     end
