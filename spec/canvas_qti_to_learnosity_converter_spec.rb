@@ -1242,5 +1242,30 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       _, question = subject.convert_item(qti_string: qti)
       expect(question.extract_feedback).to eq({})
     end
+
+    it "ignores itemfeedback elements with no ident attribute" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>essay_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_str ident="response1" rcardinality="Single"><render_fib/></response_str>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+          </resprocessing>
+          <itemfeedback>
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Orphan feedback&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.extract_feedback).to eq({})
+    end
   end
 end

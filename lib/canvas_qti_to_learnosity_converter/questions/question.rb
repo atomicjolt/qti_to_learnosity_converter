@@ -37,6 +37,7 @@ module CanvasQtiToLearnosityConverter
         when "correct_fb"           then feedback[:correct_feedback] = text
         when "general_fb"           then feedback[:general_feedback] = text
         when "general_incorrect_fb" then feedback[:incorrect_feedback] = text
+        # Any other *_fb ident (e.g. per-answer labels like "abc123_fb") is treated as per-answer distractor rationale.
         else distractor_rationale << text if ident&.end_with?("_fb")
         end
       end
