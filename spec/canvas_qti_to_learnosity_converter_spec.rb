@@ -1267,5 +1267,24 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       _, question = subject.convert_item(qti_string: qti)
       expect(question.extract_feedback).to eq({})
     end
+
+    it "includes feedback in the convert output" do
+      _, question = subject.convert_item(qti_string: qti_with_all_feedback)
+      result = question.convert({}, "")
+
+      expect(result[:metadata]).to eq({
+        correct_feedback: "<p>Correct!</p>",
+        general_feedback: "<p>General feedback</p>",
+        incorrect_feedback: "<p>Incorrect!</p>",
+        distractor_rationale_response_level: ["<p>Answer A feedback</p>", "<p>Answer B feedback</p>"],
+      })
+    end
+
+    it "does not add a metadata key when there is no feedback" do
+      _, question = subject.convert_item(qti_string: qti_with_no_feedback)
+      result = question.convert({}, "")
+
+      expect(result).not_to have_key(:metadata)
+    end
   end
 end

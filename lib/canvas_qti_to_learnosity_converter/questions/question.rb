@@ -110,6 +110,14 @@ module CanvasQtiToLearnosityConverter
     def convert(assets, path)
       object = to_learnosity
       add_learnosity_assets(assets, path, object)
+
+      feedback = extract_feedback
+      unless feedback.empty?
+        object[:metadata] ||= {}
+        object[:metadata].merge!(feedback)
+      end
+
+      object
     end
   end
 end
