@@ -1286,5 +1286,24 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       expect(result).not_to have_key(:metadata)
     end
+
+    it "merges feedback into pre-existing metadata without clobbering it" do
+      _, question = subject.convert_item(qti_string: qti_with_all_feedback)
+      learnosity_object = {
+        type: "mcq",
+        stimulus: "Q?",
+        metadata: { existing_key: "existing_value" }
+      }
+      allow(question).to receive(:to_learnosity).and_return(learnosity_object)
+      allow(question).to receive(:add_learnosity_assets)
+
+      result = question.convert({}, "")
+
+      expect(result[:metadata]).to include(
+        existing_key: "existing_value",
+        correct_feedback: "<p>Correct!</p>",
+        general_feedback: "<p>General feedback</p>",
+      )
+    end
   end
 end
