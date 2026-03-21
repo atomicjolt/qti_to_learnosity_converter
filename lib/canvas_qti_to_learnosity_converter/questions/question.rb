@@ -112,6 +112,16 @@ module CanvasQtiToLearnosityConverter
       add_learnosity_assets(assets, path, object) # mutates object in place; return value unused
       feedback = extract_feedback
       unless feedback.empty?
+        # Ensure any asset references in feedback HTML are processed and collected.
+        feedback.each do |key, value|
+          if value.is_a?(String)
+            process_assets!(assets, path, value)
+          elsif key.to_s == "distractor_rationale_response_level" && value.is_a?(Array)
+            value.each do |entry|
+              process_assets!(assets, path, entry) if entry.is_a?(String)
+            end
+          end
+        end
         object[:metadata] ||= {}
         object[:metadata].merge!(feedback)
       end

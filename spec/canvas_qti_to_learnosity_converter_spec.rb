@@ -1305,5 +1305,69 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         general_feedback: "<p>General feedback</p>",
       )
     end
+
+    it "rewrites asset references in string feedback fields and collects them" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata><qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield></qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="opt1"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">opt1</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="correct_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;img src="images/hint.png"/&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+
+      result = question.convert(assets, "")
+
+      expect(assets.keys).to eq(["/images/hint.png"])
+      expect(result.dig(:metadata, :correct_feedback)).to match(%r{___EXPORT_ROOT___/assets/.+\.png})
+    end
+
+    it "rewrites asset references in distractor rationale entries and collects them" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata><qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield></qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="opt1"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">opt1</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="opt1_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;img src="images/distractor.png"/&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+
+      result = question.convert(assets, "")
+
+      expect(assets.keys).to eq(["/images/distractor.png"])
+      expect(result.dig(:metadata, :distractor_rationale_response_level).first).to match(%r{___EXPORT_ROOT___/assets/.+\.png})
+    end
   end
 end
