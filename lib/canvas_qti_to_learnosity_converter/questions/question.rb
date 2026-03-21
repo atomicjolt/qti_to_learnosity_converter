@@ -110,7 +110,6 @@ module CanvasQtiToLearnosityConverter
     def convert(assets, path)
       object = to_learnosity
       add_learnosity_assets(assets, path, object) # mutates object in place; return value unused
-
       feedback = extract_feedback
       unless feedback.empty?
         object[:metadata] ||= {}
