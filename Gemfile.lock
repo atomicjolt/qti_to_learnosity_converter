@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    canvas_qti_to_learnosity_converter (3.3.0)
+    canvas_qti_to_learnosity_converter (3.4.0)
       activesupport
       nokogiri
       rubyzip (~> 3.0)

@@ -1060,4 +1060,314 @@ RSpec.describe CanvasQtiToLearnosityConverter do
       expect(subject.assessments[0][:data][:items].count).to eql(4)
     end
   end
+
+  describe "feedback" do
+    let(:qti_with_all_feedback) do
+      <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="abc123"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+                <response_label ident="def456"><material><mattext texttype="text/plain">B</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">abc123</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="abc123_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Answer A feedback&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="def456_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Answer B feedback&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="correct_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Correct!&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="general_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;General feedback&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="general_incorrect_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Incorrect!&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+    end
+
+    let(:qti_with_general_only) do
+      <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>essay_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Write something.</mattext></material>
+            <response_str ident="response1" rcardinality="Single"><render_fib/></response_str>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+          </resprocessing>
+          <itemfeedback ident="general_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;General only&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+    end
+
+    let(:qti_with_no_feedback) do
+      <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>essay_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Write something.</mattext></material>
+            <response_str ident="response1" rcardinality="Single"><render_fib/></response_str>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+          </resprocessing>
+        </item>
+      XML
+    end
+
+    it "extracts all feedback types" do
+      _, question = subject.convert_item(qti_string: qti_with_all_feedback)
+      feedback = question.extract_feedback
+
+      expect(feedback).to eq({
+        correct_feedback: "<p>Correct!</p>",
+        general_feedback: "<p>General feedback</p>",
+        incorrect_feedback: "<p>Incorrect!</p>",
+        distractor_rationale_response_level: ["<p>Answer A feedback</p>", "<p>Answer B feedback</p>"],
+      })
+    end
+
+    it "extracts only the feedback that is present" do
+      _, question = subject.convert_item(qti_string: qti_with_general_only)
+      feedback = question.extract_feedback
+
+      expect(feedback).to eq({ general_feedback: "<p>General only</p>" })
+    end
+
+    it "returns an empty hash when no feedback is present" do
+      _, question = subject.convert_item(qti_string: qti_with_no_feedback)
+      expect(question.extract_feedback).to eq({})
+    end
+
+    it "collects per-answer feedbacks in document order" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="first"><material><mattext>A</mattext></material></response_label>
+                <response_label ident="second"><material><mattext>B</mattext></material></response_label>
+                <response_label ident="third"><material><mattext>C</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">first</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="first_fb">
+            <flow_mat><material><mattext texttype="text/html">First</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="second_fb">
+            <flow_mat><material><mattext texttype="text/html">Second</mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="third_fb">
+            <flow_mat><material><mattext texttype="text/html">Third</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      feedback = question.extract_feedback
+
+      expect(feedback[:distractor_rationale_response_level]).to eq(["First", "Second", "Third"])
+    end
+
+    it "skips per-answer feedbacks with empty content" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="opt1"><material><mattext>A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">opt1</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="opt1_fb">
+            <flow_mat><material><mattext texttype="text/html"></mattext></material></flow_mat>
+          </itemfeedback>
+          <itemfeedback ident="general_fb">
+            <flow_mat><material><mattext texttype="text/html"></mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.extract_feedback).to eq({})
+    end
+
+    it "ignores itemfeedback elements with no ident attribute" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>essay_question</fieldentry></qtimetadatafield>
+              <qtimetadatafield><fieldlabel>points_possible</fieldlabel><fieldentry>1.0</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_str ident="response1" rcardinality="Single"><render_fib/></response_str>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+          </resprocessing>
+          <itemfeedback>
+            <flow_mat><material><mattext texttype="text/html">&lt;p&gt;Orphan feedback&lt;/p&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      expect(question.extract_feedback).to eq({})
+    end
+
+    it "includes feedback in the convert output" do
+      _, question = subject.convert_item(qti_string: qti_with_all_feedback)
+      result = question.convert({}, "")
+
+      expect(result[:metadata]).to eq({
+        correct_feedback: "<p>Correct!</p>",
+        general_feedback: "<p>General feedback</p>",
+        incorrect_feedback: "<p>Incorrect!</p>",
+        distractor_rationale_response_level: ["<p>Answer A feedback</p>", "<p>Answer B feedback</p>"],
+      })
+    end
+
+    it "does not add a metadata key when there is no feedback" do
+      _, question = subject.convert_item(qti_string: qti_with_no_feedback)
+      result = question.convert({}, "")
+
+      expect(result).not_to have_key(:metadata)
+    end
+
+    it "merges feedback into pre-existing metadata without clobbering it" do
+      _, question = subject.convert_item(qti_string: qti_with_all_feedback)
+      learnosity_object = {
+        type: "mcq",
+        stimulus: "Q?",
+        metadata: { existing_key: "existing_value" }
+      }
+      allow(question).to receive(:to_learnosity).and_return(learnosity_object)
+      allow(question).to receive(:add_learnosity_assets)
+
+      result = question.convert({}, "")
+
+      expect(result[:metadata]).to include(
+        existing_key: "existing_value",
+        correct_feedback: "<p>Correct!</p>",
+        general_feedback: "<p>General feedback</p>",
+      )
+    end
+
+    it "rewrites asset references in string feedback fields and collects them" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata><qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield></qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="opt1"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">opt1</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="correct_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;img src="images/hint.png"/&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+
+      result = question.convert(assets, "")
+
+      expect(assets.keys).to eq(["/images/hint.png"])
+      expect(result.dig(:metadata, :correct_feedback)).to match(%r{___EXPORT_ROOT___/assets/.+\.png})
+    end
+
+    it "rewrites asset references in distractor rationale entries and collects them" do
+      qti = <<~XML
+        <item ident="test" title="Q">
+          <itemmetadata>
+            <qtimetadata><qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield></qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Q?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="opt1"><material><mattext texttype="text/plain">A</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <outcomes><decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/></outcomes>
+            <respcondition continue="No"><conditionvar><varequal respident="response1">opt1</varequal></conditionvar><setvar action="Set" varname="SCORE">100</setvar></respcondition>
+          </resprocessing>
+          <itemfeedback ident="opt1_fb">
+            <flow_mat><material><mattext texttype="text/html">&lt;img src="images/distractor.png"/&gt;</mattext></material></flow_mat>
+          </itemfeedback>
+        </item>
+      XML
+      _, question = subject.convert_item(qti_string: qti)
+      assets = {}
+
+      result = question.convert(assets, "")
+
+      expect(assets.keys).to eq(["/images/distractor.png"])
+      expect(result.dig(:metadata, :distractor_rationale_response_level).first).to match(%r{___EXPORT_ROOT___/assets/.+\.png})
+    end
+  end
 end
