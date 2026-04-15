@@ -14,11 +14,22 @@ module CanvasQtiToLearnosityConverter
 
     def extract_stimulus()
       template = get_template()
+      uses_backtick = template.match?(/`[^`]+`/)
+
       extract_template_values(template).each.with_index do |var_name, index|
-        template.sub!("[#{var_name}]", "{{var:val#{index}}}")
+        pattern = uses_backtick ? "`#{var_name}`" : "[#{var_name}]"
+        template.sub!(pattern, "{{var:val#{index}}}")
       end
 
       template
+    end
+
+    # New Quizzes exports variables with backtick notation (e.g. `w`),
+    # while Classic Quizzes uses square bracket notation (e.g. [w]).
+    # Detect which format is in use and return plain variable names either way.
+    def extract_template_values(template)
+      backtick_vars = template.scan(/`([^`]+)`/).map(&:first)
+      backtick_vars.any? ? backtick_vars : super
     end
 
     def extract_validation()
