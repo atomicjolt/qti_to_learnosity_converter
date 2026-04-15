@@ -675,6 +675,33 @@ RSpec.describe CanvasQtiToLearnosityConverter do
         }
       })
     end
+
+    it "handles a New Quizzes calculated question with backtick variable notation" do
+      qti_file = File.new("spec/fixtures/calculated_new_quizzes.qti.xml")
+      qti = qti_file.read
+      question_type, question = subject.convert_item(qti_string: qti)
+
+      dynamic_data = question.dynamic_content_data()
+
+      expect(dynamic_data[:cols]).to eq(["val0", "answer"])
+      expect(dynamic_data[:rows].keys.count).to eq 3
+      row_key = dynamic_data[:rows].keys.first
+      expect(dynamic_data[:rows][row_key][:values].count).to eq 2
+
+      learnosity = question.to_learnosity
+
+      expect(question_type).to eq "question"
+      expect(learnosity[:type]).to eq "clozeformula"
+      expect(learnosity[:stimulus]).to eq "<p>The weight is {{var:val0}} kg. What is double the weight?</p>"
+      expect(learnosity[:template]).to eq "{{response}}"
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 1.0,
+          "value" => [[{ "method" => "equivValue", "value" => "{{var:answer}}\\pm0" }]]
+        }
+      })
+    end
   end
 
   describe "Ordering" do
