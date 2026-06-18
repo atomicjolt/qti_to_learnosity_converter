@@ -657,22 +657,197 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       dynamic_data = question.dynamic_content_data()
 
-      expect(dynamic_data[:cols]).to eq(["val0", "val1", "val2", "answer"])
+      expect(dynamic_data[:cols]).to eq(["x", "y", "z", "seed", "decimal"])
       expect(dynamic_data[:rows].keys.count).to eq 10
       row_key = dynamic_data[:rows].keys.first
-      expect(dynamic_data[:rows][row_key][:values].count).to eq 4
+      expect(dynamic_data[:rows][row_key][:values].count).to eq 5
       learnosity = question.to_learnosity
 
       expect(question_type).to eq "question"
-      expect(learnosity[:type]).to eq "clozeformula"
-      expect(learnosity[:stimulus]).to eq "<div><p>1 + {{var:val0}} + {{var:val1}} + {{var:val2}} = ?</p></div>"
-      expect(learnosity[:template]).to eq "{{response}}"
+      expect(learnosity[:type]).to eq "clozeformulaV2"
+      expect(learnosity[:is_dynamic_content]).to eq true
+      expect(learnosity[:stimulus]).to be_nil
+      expect(learnosity[:template]).to eq "<div><p>1 + {{var:x}} + {{var:y}} + {{var:z}} = ?</p></div>{{response}}"
       expect(learnosity[:validation]).to eq({
         "scoring_type"=>"exactMatch",
         "valid_response" => {
           "score" => 3.0,
-          "value" => [[{"method"=>"equivValue", "value"=>"{{var:answer}}\\pm0.23"}]]
+          "value" => [[{"method"=>"equivValue", "value"=>"{{var:decimal}}", "options"=>{"decimalPlaces"=>4}}]]
         }
+      })
+    end
+
+    it "builds MQG item_metadata with dynamic_content from Classic Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      dc = question.item_metadata[:dynamic_content]
+
+      expect(dc[:parameters]).to eq([
+        { name: "x", type: "range", min: "1.0", max: "10.0", step: 0.001 },
+        { name: "y", type: "range", min: "1.0", max: "10.0", step: 0.001 },
+        { name: "z", type: "range", min: "1.0", max: "10.0", step: 0.001 },
+      ])
+
+      gm = dc[:generated_math]
+      expect(gm[:type]).to eq "formula"
+      expect(gm[:seed]).to eq "1+x+y+z"
+      expect(gm[:response]).to eq ["decimal"]
+      expect(gm[:context]).to eq "<div><p>1 + {x} + {y} + {z} = ?</p></div>"
+      expect(gm[:template]).to eq "{response==seed}"
+      expect(gm[:params]).to eq [["x", "y", "z"], ["1.0..10.0:0.001", "1.0..10.0:0.001", "1.0..10.0:0.001"]]
+      expect(gm[:count]).to eq 10
+      expect(gm[:limit]).to eq 10
+      expect(gm[:data].length).to eq 10
+      expect(gm[:data].first).to eq({
+        val: [
+          { name: "x", val: "3.199" },
+          { name: "y", val: "9.916" },
+          { name: "z", val: "8.003" },
+          { name: "decimal", val: "22.118" },
+        ]
+      })
+    end
+
+    it "builds MQG item_metadata with dynamic_content from New Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated_new_quizzes.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      dc = question.item_metadata[:dynamic_content]
+
+      expect(dc[:parameters]).to eq([
+        { name: "w", type: "range", min: "10", max: "100", step: 1 },
+      ])
+
+      gm = dc[:generated_math]
+      expect(gm[:seed]).to eq "w*2"
+      expect(gm[:context]).to eq "<p>The weight is {w} kg. What is double the weight?</p>"
+      expect(gm[:params]).to eq [["w"], ["10..100:1"]]
+      expect(gm[:count]).to eq 3
+      expect(gm[:data].first).to eq({
+        val: [
+          { name: "w", val: "50" },
+          { name: "decimal", val: "100.0" },
+        ]
+      })
+    end
+
+    it "builds question_data in item_metadata from Classic Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      qd = question.item_metadata[:dynamic_content][:question_data]
+      expect(qd[:expression]).to eq "1+{{var:x}}+{{var:y}}+{{var:z}}"
+      expect(qd[:template]).to eq "<div><p>1 + {{var:x}} + {{var:y}} + {{var:z}} = ?</p></div>{{response}}"
+    end
+
+    it "builds validation_data in item_metadata from Classic Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      vd = question.item_metadata[:dynamic_content][:validation_data]
+      expect(vd[:availableFormats]).to eq([{ name: "decimal", val: "\\(22.118\\)", isSelected: true }])
+      expect(vd[:formatsData][:decimal][:value]).to eq([[{
+        method: "equivValue",
+        value: "{{var:decimal}}",
+        options: { decimalPlaces: 4, allowThousandsSeparator: false, setThousandsSeparator: [","], setDecimalSeparator: ["."] }
+      }]])
+      expect(vd[:options]).to eq({
+        score: 3.0, decimalPlaces: "4",
+        allowThousandsSeparator: false, setDecimalSeparator: ".", setThousandsSeparator: ","
+      })
+    end
+
+    it "builds question_data in item_metadata from New Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated_new_quizzes.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      qd = question.item_metadata[:dynamic_content][:question_data]
+      expect(qd[:expression]).to eq "{{var:w}}*2"
+      expect(qd[:template]).to eq "<p>The weight is {{var:w}} kg. What is double the weight?</p>{{response}}"
+    end
+
+    it "builds validation_data in item_metadata from New Quizzes fixture" do
+      qti_file = File.new("spec/fixtures/calculated_new_quizzes.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      vd = question.item_metadata[:dynamic_content][:validation_data]
+      expect(vd[:availableFormats]).to eq([{ name: "decimal", val: "\\(100.0\\)", isSelected: true }])
+      expect(vd[:formatsData][:decimal][:value]).to eq([[{
+        method: "equivValue",
+        value: "{{var:decimal}}",
+        options: { decimalPlaces: 1, allowThousandsSeparator: false, setThousandsSeparator: [","], setDecimalSeparator: ["."] }
+      }]])
+      expect(vd[:options]).to eq({
+        score: 1.0, decimalPlaces: "1",
+        allowThousandsSeparator: false, setDecimalSeparator: ".", setThousandsSeparator: ","
+      })
+    end
+
+    it "uses scientific notation format when scientific_notation=true" do
+      qti_file = File.new("spec/fixtures/calculated_scientific.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      learnosity = question.to_learnosity
+      expect(learnosity[:validation]).to eq({
+        "scoring_type" => "exactMatch",
+        "valid_response" => {
+          "score" => 2.0,
+          "value" => [[
+            {
+              "method" => "equivValue",
+              "value" => "{{var:scientific}}",
+              "options" => {
+                "allowThousandsSeparator" => false,
+                "setThousandsSeparator" => [","],
+                "setDecimalSeparator" => ["."],
+              }
+            },
+            {
+              "method" => "equivSyntax",
+              "value" => "\\format{\\scientific}",
+              "options" => {
+                "allowThousandsSeparator" => false,
+                "setThousandsSeparator" => [","],
+                "setDecimalSeparator" => ["."],
+              }
+            }
+          ]]
+        }
+      })
+
+      dc = question.item_metadata[:dynamic_content]
+      gm = dc[:generated_math]
+      expect(gm[:response]).to eq ["scientific"]
+      expect(gm[:data].first).to eq({
+        val: [
+          { name: "m", val: "5" },
+          { name: "scientific", val: "\\(5.0\\times {10^{2}}\\)" },
+        ]
+      })
+
+      vd = dc[:validation_data]
+      expect(vd[:availableFormats]).to eq([{ name: "scientific", val: "\\(5.0\\times {10^{2}}\\)", isSelected: true }])
+      expect(vd[:formatsData][:scientific][:value].first).to include(
+        a_hash_including(method: "equivSyntax", value: "\\format{\\scientific}")
+      )
+    end
+
+    it "provides Math Question Generator widget metadata" do
+      qti_file = File.new("spec/fixtures/calculated.qti.xml")
+      qti = qti_file.read
+      _question_type, question = subject.convert_item(qti_string: qti)
+
+      expect(question.widget_metadata).to eq({
+        name: "Math Question Generator",
+        template_reference: "17149c09-83ba-4b1b-afff-a681e7edd8ff"
       })
     end
 
@@ -683,22 +858,23 @@ RSpec.describe CanvasQtiToLearnosityConverter do
 
       dynamic_data = question.dynamic_content_data()
 
-      expect(dynamic_data[:cols]).to eq(["val0", "answer"])
+      expect(dynamic_data[:cols]).to eq(["w", "seed", "decimal"])
       expect(dynamic_data[:rows].keys.count).to eq 3
       row_key = dynamic_data[:rows].keys.first
-      expect(dynamic_data[:rows][row_key][:values].count).to eq 2
+      expect(dynamic_data[:rows][row_key][:values].count).to eq 3
 
       learnosity = question.to_learnosity
 
       expect(question_type).to eq "question"
-      expect(learnosity[:type]).to eq "clozeformula"
-      expect(learnosity[:stimulus]).to eq "<p>The weight is {{var:val0}} kg. What is double the weight?</p>"
-      expect(learnosity[:template]).to eq "{{response}}"
+      expect(learnosity[:type]).to eq "clozeformulaV2"
+      expect(learnosity[:is_dynamic_content]).to eq true
+      expect(learnosity[:stimulus]).to be_nil
+      expect(learnosity[:template]).to eq "<p>The weight is {{var:w}} kg. What is double the weight?</p>{{response}}"
       expect(learnosity[:validation]).to eq({
         "scoring_type" => "exactMatch",
         "valid_response" => {
           "score" => 1.0,
-          "value" => [[{ "method" => "equivValue", "value" => "{{var:answer}}\\pm0" }]]
+          "value" => [[{ "method" => "equivValue", "value" => "{{var:decimal}}", "options" => { "decimalPlaces" => 1 } }]]
         }
       })
     end
@@ -860,6 +1036,22 @@ RSpec.describe CanvasQtiToLearnosityConverter do
   end
 
   describe "Convert canvas quiz items" do
+    it "sets definition template to dynamic and widget metadata for calculated questions" do
+      qti_string = File.read(fixture_path("all_question_types.qti.xml"))
+      subject.convert_assessment(qti_string, '/')
+
+      items = subject.items
+      widgets = subject.widgets
+
+      calc_item = items.find { |i| i[:dynamic_content_data][:cols]&.any? }
+      expect(calc_item[:definition][:template]).to eq "dynamic"
+
+      calc_widget_ref = calc_item[:definition][:widgets].first[:reference]
+      calc_widget = widgets.find { |w| w[:reference] == calc_widget_ref }
+      expect(calc_widget[:metadata][:name]).to eq "Math Question Generator"
+      expect(calc_widget[:metadata][:template_reference]).to eq "17149c09-83ba-4b1b-afff-a681e7edd8ff"
+    end
+
     it "handles qti strings" do
       qti_string = File.read(fixture_path("all_question_types.qti.xml"))
 

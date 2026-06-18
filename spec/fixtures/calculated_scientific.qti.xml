@@ -1,0 +1,57 @@
+<item ident="itest_calculated_scientific" title="Question">
+  <itemmetadata>
+    <qtimetadata>
+      <qtimetadatafield>
+        <fieldlabel>question_type</fieldlabel>
+        <fieldentry>calculated_question</fieldentry>
+      </qtimetadatafield>
+      <qtimetadatafield>
+        <fieldlabel>points_possible</fieldlabel>
+        <fieldentry>2.0</fieldentry>
+      </qtimetadatafield>
+    </qtimetadata>
+  </itemmetadata>
+  <presentation>
+    <material>
+      <mattext texttype="text/html">&lt;p&gt;The mass is `m` kg. What is 100 times the mass?&lt;/p&gt;</mattext>
+    </material>
+    <response_str ident="response1" rcardinality="Single">
+      <render_fib fibtype="Decimal">
+        <response_label ident="answer1"/>
+      </render_fib>
+    </response_str>
+  </presentation>
+  <resprocessing>
+    <outcomes>
+      <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/>
+    </outcomes>
+    <respcondition title="correct">
+      <conditionvar><other/></conditionvar>
+      <setvar varname="SCORE" action="Set">100</setvar>
+    </respcondition>
+  </resprocessing>
+  <itemproc_extension>
+    <calculated>
+      <answer_tolerance margin_type="absolute">0</answer_tolerance>
+      <formulas decimal_places="2" scientific_notation="true">
+        <formula>m*100</formula>
+      </formulas>
+      <vars>
+        <var name="m" scale="0">
+          <min>1</min>
+          <max>9</max>
+        </var>
+      </vars>
+      <var_sets>
+        <var_set ident="set1">
+          <var name="m">5</var>
+          <answer>500.0</answer>
+        </var_set>
+        <var_set ident="set2">
+          <var name="m">3</var>
+          <answer>300.0</answer>
+        </var_set>
+      </var_sets>
+    </calculated>
+  </itemproc_extension>
+</item>
