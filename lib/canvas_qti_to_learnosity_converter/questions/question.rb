@@ -58,6 +58,14 @@ module CanvasQtiToLearnosityConverter
       {}
     end
 
+    def widget_metadata()
+      {}
+    end
+
+    def item_metadata()
+      {}
+    end
+
     def process_assets!(assets, path, text)
       doc = Nokogiri::XML.fragment(text)
       changed = false

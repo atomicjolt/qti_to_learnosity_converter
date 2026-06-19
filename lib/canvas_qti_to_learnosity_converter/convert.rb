@@ -209,14 +209,16 @@ module CanvasQtiToLearnosityConverter
     def build_item_definition(item, learnosity_type, quiz_item, path, child_items)
       ident = item.attribute("ident")&.value
 
+      extra_widget_metadata = quiz_item.widget_metadata()
       item_widgets = [{
         type: learnosity_type,
         data: quiz_item.convert(@assets, path),
         reference: build_reference("#{ident}_widget"),
-        metadata: { original_item_ref: ident },
+        metadata: { original_item_ref: ident }.merge(extra_widget_metadata),
       }]
 
       definition = {}
+      definition[:template] = "dynamic" if extra_widget_metadata[:name] == "Math Question Generator"
 
       if item.css("presentation > material[orientation]").present?
         child_widgets = child_items.map do |child_item|
@@ -428,7 +430,7 @@ module CanvasQtiToLearnosityConverter
             @items << {
               title: item_title,
               reference:,
-              metadata: meta.merge({ original_item_ref: ident }),
+              metadata: meta.merge({ original_item_ref: ident }).merge(quiz_item.item_metadata()),
               definition:,
               questions: item_widgets.select{ |w| w[:type] == "question" }.map{ |w| w[:reference] },
               features: item_widgets.select{ |w| w[:type] == "feature" }.map{ |w| w[:reference] },
