@@ -526,7 +526,7 @@ module CanvasQtiToLearnosityConverter
       result = convert_imscc_export(input_path)
 
       export_writer = ExportWriter.new(output_path)
-      export_writer.write_to_zip("export.json", { version: 2.0 })
+      export_writer.write_to_zip("export.json", { version: "2.0" })
 
       @assessments.each do |activity|
         export_writer.write_to_zip("activities/#{activity[:reference]}.json", activity)
